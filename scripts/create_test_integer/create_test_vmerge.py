@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_integer.create_test_common import  generate_macros_vadc, generate_tests_vadc
+from scripts.create_test_integer.create_test_common import  generate_macros_vvvxvim, generate_tests_vvvxvim
 import re
 
 instr = 'vmerge'
@@ -43,10 +43,10 @@ def create_first_test_vmerge(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_p
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vadc(f, lmul)
+    generate_macros_vvvxvim(f, lmul)
 
     # Generate tests
-    num_tests_tuple = generate_tests_vadc(instr, f, rs1_val, rs2_val, lmul)
+    num_tests_tuple = generate_tests_vvvxvim(instr, f, rs1_val, rs2_val, lmul)
 
     # Common const information
     print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, num_tests_tuple, vsew, f)

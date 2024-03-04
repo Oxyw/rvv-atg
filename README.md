@@ -1,5 +1,7 @@
 # RISC-V Vector Automatic Tests Generator
 
+NOTE: Test format conforms to RVV v1.0 spec.
+
 ## Branches Descriptions
 
 This repository has two available branches:
@@ -89,9 +91,10 @@ After genering, run `python move_generate_all_elf.py`, this will check if genera
 
 7. run `riscof run --config=config.ini --suite=test_suite --env=env`
 
+8. If run `riscof coverage` command, modify vlen arg in `riscof_files/sail_cSim/riscof_sail_cSim.py` line 121: `-v128`
+
 ## Known Bugs
 - Not support floating-point vsew=16
-- Lack of vmerge tests
 - Lack of load store eew=64 tests
 - SEGMENT load and store signature problem: if eew > sew, only the first register will be signatured
 - mask instructions lack of test different registers tests

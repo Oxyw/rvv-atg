@@ -472,6 +472,14 @@ def print_mask_origin_data_ending(f):
 	.word 0x9bd83b8b\n\
     ", file=f)
 
+  
+def print_origin_data_ending(f):
+    print("\n.align 4", file=f)
+    print("rd_origin_data:", file=f)
+    for i in range(len(rd_origin_data)):
+        print(".word\t%s"%rd_origin_data[i], file=f)
+
+
 def print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, test_num_tuple, vsew, f, generate_vi = True, generate_vx = True, generate_vv = True, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])

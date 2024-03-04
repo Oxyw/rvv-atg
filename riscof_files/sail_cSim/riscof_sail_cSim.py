@@ -118,7 +118,7 @@ class sail_cSim(pluginTemplate):
                         -t {0}.log --parser-name c_sail -o coverage.rpt \
                         --sig-label begin_signature  end_signature \
                         --test-label _start _end \
-                        -e ref.elf -c {4} -c {1} -x{2} -v128 {3};'.format(\
+                        -e ref.elf -c {1} -x{2} -v128 {3};'.format(\
                         test_name, ' -c '.join(cgf_file), self.xlen, cov_str)
             else:
                 coverage_cmd = ''

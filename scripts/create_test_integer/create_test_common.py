@@ -336,14 +336,14 @@ def generate_macros_muladd(f, lmul):
             inst v24, x1, v8%s; "%(", v0.t" if masked else "") + " \\\n\
         )", file=f)
 
-def generate_macros_vadc(f, lmul):
+def generate_macros_vvvxvim(f, lmul):
     lmul = 1 if lmul < 1 else int(lmul)
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     masked = True if os.environ['RVV_ATG_MASKED'] == "True" else False
 
-    print("#undef TEST_ADC_VV_OP \n\
-#define TEST_ADC_VV_OP( testnum, inst, val1, val2 ) \\\n\
+    print("#undef TEST_VV_M_OP \n\
+#define TEST_VV_M_OP( testnum, inst, val1, val2 ) \\\n\
         TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -355,8 +355,8 @@ def generate_macros_vadc(f, lmul):
             vle%d.v v16, (x7);"%vsew + " \\\n\
             inst v24, v8, v16, v0; \\\n\
         )", file=f)
-    print("#undef TEST_ADC_VX_OP \n\
-#define TEST_ADC_VX_OP( testnum, inst, val1, val2 ) \\\n\
+    print("#undef TEST_VX_M_OP \n\
+#define TEST_VX_M_OP( testnum, inst, val1, val2 ) \\\n\
         TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -367,8 +367,8 @@ def generate_macros_vadc(f, lmul):
             li x1, MASK_VSEW(val2); \\\n\
             inst v24, v8, x1, v0; \\\n\
         )", file=f)
-    print("#undef TEST_ADC_VI_OP \n\
-#define TEST_ADC_VI_OP( testnum, inst, val1, val2 ) \\\n\
+    print("#undef TEST_VI_M_OP \n\
+#define TEST_VI_M_OP( testnum, inst, val1, val2 ) \\\n\
         TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -381,7 +381,7 @@ def generate_macros_vadc(f, lmul):
     for n in range(1, 32):
         if n == 8 or n == 16 or n == 24 or n % lmul != 0:
             continue
-        print("#define TEST_ADC_VV_OP_1%d( testnum, inst, val1, val2 )"%n + " \\\n\
+        print("#define TEST_VV_M_OP_1%d( testnum, inst, val1, val2 )"%n + " \\\n\
         TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -397,7 +397,7 @@ def generate_macros_vadc(f, lmul):
         if n == 8 or n == 16 or n == 24 or n % lmul != 0:
             continue
         # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
-        print("#define TEST_ADC_VV_OP_rd%d( testnum, inst, val1, val2 )"%n + " \\\n\
+        print("#define TEST_VV_M_OP_rd%d( testnum, inst, val1, val2 )"%n + " \\\n\
         TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -409,7 +409,7 @@ def generate_macros_vadc(f, lmul):
             vle%d.v v16, (x7);"%vsew + " \\\n\
             inst v%d, v8, v16, v0;"%n+" \\\n\
         ) ",file=f)
-    print("#define TEST_ADC_VV_OP_rd8( testnum, inst, val1, val2 ) \\\n\
+    print("#define TEST_VV_M_OP_rd8( testnum, inst, val1, val2 ) \\\n\
     TEST_CASE_LOOP( testnum, v8, \\\n\
         VSET_VSEW_4AVL \\\n\
         la x7, rd_origin_data; \\\n\
@@ -421,7 +421,7 @@ def generate_macros_vadc(f, lmul):
         vle%d.v v24, (x7);"%vsew + " \\\n\
         inst v8, v16, v24, v0; \\\n\
         )", file = f)
-    print("#define TEST_ADC_VV_OP_rd16( testnum, inst, val1, val2 ) \\\n\
+    print("#define TEST_VV_M_OP_rd16( testnum, inst, val1, val2 ) \\\n\
     TEST_CASE_LOOP( testnum, v16, \\\n\
         VSET_VSEW_4AVL \\\n\
         la x7, rd_origin_data; \\\n\
@@ -1253,7 +1253,7 @@ def generate_tests_vmadc(instr, f, rs1_val, rs2_val, lmul, generate_vi = True):
 
     return (vv_test_num, vx_test_num, vi_test_num)
 
-def generate_tests_vadc(instr, f, rs1_val, rs2_val, lmul, generate_vi=True):
+def generate_tests_vvvxvim(instr, f, rs1_val, rs2_val, lmul, generate_vi=True):
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
     vlen = int(os.environ['RVV_ATG_VLEN'])
@@ -1269,20 +1269,20 @@ def generate_tests_vadc(instr, f, rs1_val, rs2_val, lmul, generate_vi=True):
 
     for i in range(loop_num):
         n += 1
-        print("  TEST_ADC_VV_OP( "+str(n)+",  %s.vvm, " %
+        print("  TEST_VV_M_OP( "+str(n)+",  %s.vvm, " %
               instr+"rs2_data+%d, rs1_data+%d)"%( i*step_bytes, i*step_bytes), file=f)
     for i in range(min(32, loop_num)):     
         k = i%31+1
         if k == 24 or k % lmul != 0 or k == 12 or k == 20 or k == 24:
             continue
         n+=1
-        print("  TEST_ADC_VV_OP_rd%d( "%k+str(n)+",  %s.vvm, "%instr+"rs2_data+%d, rs1_data+%d)"%(i*step_bytes, i*step_bytes),file=f)
+        print("  TEST_VV_M_OP_rd%d( "%k+str(n)+",  %s.vvm, "%instr+"rs2_data+%d, rs1_data+%d)"%(i*step_bytes, i*step_bytes),file=f)
         
         k = i%30+2
         if k == 8 or k == 16 or k == 24 or k % lmul != 0 or k == 12 or k == 20 or k == 24:
             continue
         n +=1
-        print("  TEST_ADC_VV_OP_1%d( "%k+str(n)+",  %s.vvm, "%instr+"rs2_data+%d, rs1_data+%d)"%(i*step_bytes, i*step_bytes),file=f)
+        print("  TEST_VV_M_OP_1%d( "%k+str(n)+",  %s.vvm, "%instr+"rs2_data+%d, rs1_data+%d)"%(i*step_bytes, i*step_bytes),file=f)
     
     vv_test_num = n
     
@@ -1292,7 +1292,7 @@ def generate_tests_vadc(instr, f, rs1_val, rs2_val, lmul, generate_vi=True):
     
     for i in range(loop_num):
         n += 1
-        print("  TEST_ADC_VX_OP( "+str(n)+",  %s.vxm, " %
+        print("  TEST_VX_M_OP( "+str(n)+",  %s.vxm, " %
               instr+" rs2_data+%d, %s)"%( i*step_bytes, rs1_val[i % len(rs1_val)]), file=f)
     vx_test_num = n - vv_test_num
     
@@ -1303,7 +1303,7 @@ def generate_tests_vadc(instr, f, rs1_val, rs2_val, lmul, generate_vi=True):
 
         for i in range(loop_num):
             n += 1
-            print("  TEST_ADC_VI_OP( "+str(n)+",  %s.vim, " %
+            print("  TEST_VI_M_OP( "+str(n)+",  %s.vim, " %
                 instr+"rs2_data+%d, 14)"%(i*step_bytes), file=f)
     vi_test_num = n - vx_test_num
 

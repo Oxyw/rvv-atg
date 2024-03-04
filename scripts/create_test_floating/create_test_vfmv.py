@@ -41,9 +41,9 @@ def generate_macros(f, vsew):
             la a0, base; \\\n\
             fl%s f7, 0(a0); \\\n\
             vfmv.v.f v24, f7; \\\n\
-            vfmv.f.s f8, v24; \\\n\
-            fcvt.w.s x%d, f8; \\\n\
-            fcvt.w.s x7, f7; \n" % (n, "w" if vsew == 32 else "d", n), file=f)
+            vfmv.f.s f%d, v24; \\\n\
+            fcvt.w.s x8, f%d; \\\n\
+            fcvt.w.s x7, f7; \n" % (n, "w" if vsew == 32 else "d", n, n), file=f)
     for n in range(1, 32):
         print("#define TEST_VFMVS_OP_rs_%d( testnum, base ) \\\n\
             li TESTNUM, testnum; \\\n\
@@ -74,7 +74,7 @@ def generate_macros(f, vsew):
 
 
 def generate_tests(f, lmul):
-    n = 1
+    n = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.f.s / vfmv.v.f Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)

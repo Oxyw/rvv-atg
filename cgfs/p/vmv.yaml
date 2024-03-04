@@ -4,6 +4,9 @@ vmv:
     opcode: 
       vmv.x.s: 0
       vmv.s.x: 0
+      vmv.v.v: 0
+      vmv.v.x: 0
+      vmv.v.i: 0
     rs2:
       <<: *v_regs
     rd: 
