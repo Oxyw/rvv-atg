@@ -19,7 +19,7 @@ def create_empty_test_vredsum(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     
 
     # Common const information
-    print_common_withmask_ending(0, f)
+    print_common_withmask_ending(0, f, int(vlen * lmul / vsew))
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -49,7 +49,7 @@ def create_first_test_vredsum(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_
     n = generate_tests_vred(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vs', generate_vx=False, generate_vi=False)
 
     # Common const information
-    print_common_withmask_ending(n, f)
+    print_common_withmask_ending(n, f, int(vlen * lmul / vsew))
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

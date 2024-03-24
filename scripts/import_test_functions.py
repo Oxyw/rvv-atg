@@ -80,8 +80,6 @@ from scripts.create_test_fixpoint.create_test_vssrl import *
 
 # floating point
 from scripts.create_test_floating.create_test_vfmv import *
-from scripts.create_test_floating.create_test_vfredosum import *
-from scripts.create_test_floating.create_test_vfredusum import *
 from scripts.create_test_floating.create_test_vfrsub import *
 from scripts.create_test_floating.create_test_vfsgnj import *
 from scripts.create_test_floating.create_test_vfsgnjn import *
@@ -120,6 +118,7 @@ from scripts.create_test_floating.create_test_vfrec7 import *
 from scripts.create_test_floating.create_test_vfredmax import *
 from scripts.create_test_floating.create_test_vfredmin import *
 from scripts.create_test_floating.create_test_vfredosum import *
+from scripts.create_test_floating.create_test_vfredusum import *
 from scripts.create_test_floating.create_test_vmfeq import *
 from scripts.create_test_floating.create_test_vmfne import *
 from scripts.create_test_floating.create_test_vmflt import *

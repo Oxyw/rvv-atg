@@ -29,7 +29,7 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
     lmul = 1 if lmul < 1 else int(lmul)
     masked = True if os.environ['RVV_ATG_MASKED'] == "True" else False
     print("#undef TEST_VSLIDE_VX_OP \n\
-#define TEST_VSLIDE_VX_OP( testnum, inst,  rd_base, offset, base ) \\\n\
+#define TEST_VSLIDE_VX_OP( testnum, inst,  rd_base, offset, base, mask_addr ) \\\n\
         TEST_CASE_LOOP( testnum, v16,  \\\n\
             VSET_VSEW_4AVL \\\n\
             %s \
@@ -39,10 +39,10 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
             vle%d.v v16, (x1); \\\n\
             li x1, offset; \\\n\
             inst v16, v8, x1%s; \\\n\
-        )" % (("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""), vsew, vsew, (", v0.t" if masked else "")), file=f)
+        )" % (("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""), vsew, vsew, (", v0.t" if masked else "")), file=f)
 
     print("#undef TEST_VSLIDE_VI_OP \n\
-#define TEST_VSLIDE_VI_OP( testnum, inst,  rd_base, offset_imm, base) \\\n\
+#define TEST_VSLIDE_VI_OP( testnum, inst,  rd_base, offset_imm, base, mask_addr) \\\n\
         TEST_CASE_LOOP( testnum, v16,  \\\n\
             VSET_VSEW_4AVL \\\n\
             %s \
@@ -51,11 +51,11 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
             la  x1, rd_base; \\\n\
             vle%d.v v16, (x1); \\\n\
             inst v16, v8, offset_imm%s; \\\n\
-        )" % (("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""), vsew, vsew, (", v0.t" if masked else "")), file=f)
+        )" % (("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""), vsew, vsew, (", v0.t" if masked else "")), file=f)
     for i in range(1, 32):
         if i == 8 or i == 16 or i == 24 or i % lmul != 0:
             continue
-        print("#define TEST_VSLIDE_VX_OP_rd_%d( testnum, inst,  rd_base, offset, base ) \\\n\
+        print("#define TEST_VSLIDE_VX_OP_rd_%d( testnum, inst,  rd_base, offset, base, mask_addr ) \\\n\
             TEST_CASE_LOOP( testnum, v%d,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 %s \
@@ -65,12 +65,12 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
                 vle%d.v v%d, (x1); \\\n\
                 li x1, offset; \\\n\
                 inst v%d, v8, x1%s; \\\n\
-            )" % (i, i, ("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""),vsew, vsew, i, i, (", v0.t" if masked else "")), file=f)
+            )" % (i, i, ("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""),vsew, vsew, i, i, (", v0.t" if masked else "")), file=f)
 
     for i in range(1, 32):
         if i == 8 or i == 16 or i == 24 or i % lmul != 0:
             continue
-        print("#define TEST_VSLIDE_VX_OP_rs2_%d( testnum, inst,  rd_base, offset, base ) \\\n\
+        print("#define TEST_VSLIDE_VX_OP_rs2_%d( testnum, inst,  rd_base, offset, base, mask_addr ) \\\n\
             TEST_CASE_LOOP( testnum, v16,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 %s \
@@ -80,12 +80,12 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
                 vle%d.v v16, (x1); \\\n\
                 li x1, offset; \\\n\
                 inst v16, v%d, x1%s; \\\n\
-            )" % (i, ("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""),vsew, i,vsew, i, (", v0.t" if masked else "")), file=f)
+            )" % (i, ("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""),vsew, i,vsew, i, (", v0.t" if masked else "")), file=f)
 
     for i in range(1, 32):
         if i == 1 or i == 7 or i % lmul != 0:
             continue
-        print("#define TEST_VSLIDE_VX_OP_rs1_%d( testnum, inst,  rd_base, offset, base ) \\\n\
+        print("#define TEST_VSLIDE_VX_OP_rs1_%d( testnum, inst,  rd_base, offset, base, mask_addr ) \\\n\
             TEST_CASE_LOOP( testnum, v16,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 %s \
@@ -95,12 +95,12 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
                 vle%d.v v16, (x1); \\\n\
                 li x%d, offset; \\\n\
                 inst v16, v8, x%d%s; \\\n\
-            )" % (i, ("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""),vsew, vsew, i, i, (", v0.t" if masked else "")), file=f)
+            )" % (i, ("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""),vsew, vsew, i, i, (", v0.t" if masked else "")), file=f)
 
     for i in range(1, 32):
         if i == 8 or i == 16 or i == 24 or i % lmul != 0:
             continue
-        print("#define TEST_VSLIDE_VI_OP_rd_%d( testnum, inst,  rd_base, offset_imm, base ) \\\n\
+        print("#define TEST_VSLIDE_VI_OP_rd_%d( testnum, inst,  rd_base, offset_imm, base, mask_addr ) \\\n\
             TEST_CASE_LOOP( testnum, v%d,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 %s \
@@ -109,12 +109,12 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
                 la  x1, rd_base; \\\n\
                 vle%d.v v%d, (x1); \\\n\
                 inst v%d, v8, offset_imm%s; \\\n\
-            )" % (i, i, ("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""),vsew, vsew, i, i, (", v0.t" if masked else "")), file=f)
+            )" % (i, i, ("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""),vsew, vsew, i, i, (", v0.t" if masked else "")), file=f)
 
     for i in range(1, 32):
         if i == 8 or i == 16 or i == 24 or i % lmul != 0:
             continue
-        print("#define TEST_VSLIDE_VI_OP_rs2_%d( testnum, inst,  rd_base, offset_imm, base ) \\\n\
+        print("#define TEST_VSLIDE_VI_OP_rs2_%d( testnum, inst,  rd_base, offset_imm, base, mask_addr ) \\\n\
             TEST_CASE_LOOP( testnum, v16,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 %s \
@@ -123,7 +123,7 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
                 la  x1, rd_base; \\\n\
                 vle%d.v v16, (x1); \\\n\
                 inst v16, v%d, offset_imm%s; \\\n\
-            )" % (i, ("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else ""),vsew, i, vsew, i, (", v0.t" if masked else "")), file=f)
+            )" % (i, ("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else ""),vsew, i, vsew, i, (", v0.t" if masked else "")), file=f)
 
 
 def generate_tests_vslide(f, vsew, lmul):
@@ -131,21 +131,29 @@ def generate_tests_vslide(f, vsew, lmul):
     n = 1
     if num_group_walking == 0:
         return 0
+    vlmax = num_elem
+    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_num = vlmax * 2 + 4
+    j = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # vslideup.vx/vi Test    ------------------------------------------", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(num_group_walking):
         for k in range(0, num_elem + 1, 10):
-            print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslideup.vx, rd_data, " + str(k) + ", walking_data%d );" % i, file=f)
+            print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslideup.vx, rd_data, " + str(k) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
             n += 1
-            print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslidedown.vx, rd_data, " + str(k) + ", walking_data%d );" % i, file=f)
+            j = (j + 1) % mask_num
+            print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslidedown.vx, rd_data, " + str(k) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
             n += 1
+            j = (j + 1) % mask_num
             if k < 31:
-                print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslideup.vi, rd_data, " + str(k % 31) + ", walking_data%d );" % i, file=f)
+                print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslideup.vi, rd_data, " + str(k % 31) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
                 n += 1
-                print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslidedown.vi,     rd_data, " + str(k % 31) + ", walking_data%d );" % i, file=f)
+                j = (j + 1) % mask_num
+                print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslidedown.vi, rd_data, " + str(k % 31) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
                 n += 1
+                j = (j + 1) % mask_num
     vx_test_num = n
     print("  #-------------------------------------------------------------", file=f)
     print("  # vslideup.vx/vi Test  (Different Registers)  ------------------------------------------", file=f)
@@ -153,18 +161,23 @@ def generate_tests_vslide(f, vsew, lmul):
 
     for i in range(1, 32):
         if i != 8 and i != 16 and i != 24 and i % lmul == 0 and i != 12 and i != 20:
-            print("  TEST_VSLIDE_VX_OP_rd_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d );" % (i % num_group_walking), file=f)
+            print("  TEST_VSLIDE_VX_OP_rd_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             n += 1
-            print("  TEST_VSLIDE_VX_OP_rs2_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d );" % (i % num_group_walking), file=f)
+            j = (j + 1) % mask_num
+            print("  TEST_VSLIDE_VX_OP_rs2_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             n += 1
+            j = (j + 1) % mask_num
             if i < 31:
-                print("  TEST_VSLIDE_VI_OP_rd_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d );" % (i % num_group_walking), file=f)
+                print("  TEST_VSLIDE_VI_OP_rd_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
                 n += 1
-                print("  TEST_VSLIDE_VI_OP_rs2_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d );" % (i % num_group_walking), file=f)
+                j = (j + 1) % mask_num
+                print("  TEST_VSLIDE_VI_OP_rs2_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
                 n += 1
+                j = (j + 1) % mask_num
         if i != 1 and i != 7 and i % lmul == 0 and i != 24 and i != 12 and i != 20:
-            print("  TEST_VSLIDE_VX_OP_rs1_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d );" % (i % num_group_walking), file=f)
+            print("  TEST_VSLIDE_VX_OP_rs1_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             n += 1
+            j = (j + 1) % mask_num
     vi_test_num = n - vx_test_num
     return (vx_test_num, vi_test_num, 0)
 
@@ -188,6 +201,7 @@ def generate_dat_seg_vslide(f, vlen, vsew):
                 print("%d"%walking_val_grouped[i][j], file=f)
             print("", file=f)
             # generate answer
+            '''
             for k in range(num_elem + 1):
                 # Each Offset has a answer
                 print("walking_data%d_slideupans_offset_%d:" % (i, k), file=f)
@@ -202,6 +216,7 @@ def generate_dat_seg_vslide(f, vlen, vsew):
                     print_data_width_prefix(f, vsew)
                     print("%d" % (1 if (masked and get_mask_bit(p) == 0) else (walking_val_grouped[i][p + k] if p + k < num_elem else 0)), file=f)
                 print("", file=f)
+            '''
     else:
         for i in range(num_elem):
             print_data_width_prefix(f, vsew)
@@ -215,6 +230,7 @@ def generate_dat_seg_vslide(f, vlen, vsew):
                 print("%d"%walking_val_grouped[i][j], file=f)
             print("", file=f)
             # generate answer
+            '''
             for k in range(num_elem + 1):
                 # Each Offset has a answer
                 print("walking_data%d_slideupans_offset_%d:" % (i, k), file=f)
@@ -229,6 +245,7 @@ def generate_dat_seg_vslide(f, vlen, vsew):
                     print_data_width_prefix(f, vsew)
                     print("%d" % (rd_val[p] if (masked and get_mask_bit(p) == 0) else (walking_val_grouped[i][p + k] if p + k < num_elem else 0)), file=f)
                 print("", file=f)
+            '''
 
 
 def print_ending_vslide(f, vlen, vsew, tuples):
@@ -245,7 +262,7 @@ def print_ending_vslide(f, vlen, vsew, tuples):
     ", file=f)
 
     generate_dat_seg_vslide(f, vlen, vsew)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)

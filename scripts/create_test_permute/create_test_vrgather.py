@@ -14,35 +14,35 @@ def generate_macros(f, lmul):
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul = 1 if lmul < 1 else int(lmul)
     masked = True if os.environ['RVV_ATG_MASKED'] == "True" else False
-    print("#define TEST_VV_OP( testnum, inst, val2, val1 ) \\\n\
+    print("#define TEST_VV_OP( testnum, inst, val2, val1, mask_addr ) \\\n\
         TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v24, (x7);"%vsew + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+            %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
             la x7, val2; \\\n\
             vle%d.v v16, (x7);"%vsew + " \\\n\
             la x7, val1; \\\n\
             vle%d.v v8, (x7);"%vsew + " \\\n\
             inst v24, v16, v8%s;"%(", v0.t" if masked else "") + " \\\n\
         )", file=f)
-    print("#define TEST_VX_OP( testnum, inst, val2, val1 ) \\\n\
+    print("#define TEST_VX_OP( testnum, inst, val2, val1, mask_addr ) \\\n\
         TEST_CASE_LOOP( testnum, v16, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v16, (x7);"%vsew + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+            %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
             la x7, val2; \\\n\
             vle%d.v v8, (x7);"%vsew + " \\\n\
             li x1, MASK_XLEN(val1); \\\n\
             inst v16, v8, x1%s;"%(", v0.t" if masked else "") + " ; \\\n\
         )", file=f)
-    print("#define TEST_VI_OP( testnum, inst, val2, val1 ) \\\n\
+    print("#define TEST_VI_OP( testnum, inst, val2, val1, mask_addr ) \\\n\
         TEST_CASE_LOOP( testnum, v16, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v16, (x7);"%vsew + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+            %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
             la x7, val2; \\\n\
             vle%d.v v8, (x7);"%vsew + " \\\n\
             inst v16, v8, SEXT_IMM(val1)%s;"%(", v0.t" if masked else "") + " ; \\\n\
@@ -50,12 +50,12 @@ def generate_macros(f, lmul):
     for n in range(2, 32):
         if n % lmul != 0 or n == 8 or n == 16 or n == 24:
             continue
-        print("#define TEST_VV_OP_1%d( testnum, inst, val2, val1 )"%n + " \\\n\
+        print("#define TEST_VV_OP_1%d( testnum, inst, val2, val1, mask_addr )"%n + " \\\n\
             TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v24, (x7);"%vsew + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+            %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
             la x7, val2; \\\n\
             vle%d.v v16, (x7);"%vsew + " \\\n\
             la x7, val1; \\\n\
@@ -63,45 +63,26 @@ def generate_macros(f, lmul):
             inst v24, v16, v%d%s; "%(n, (", v0.t" if masked else "")) + " \\\n\
         )", file=f)
     for n in range(1, 32):
-        if n % lmul != 0 or n == 8 or n == 16 or n == 24:
+        if n % lmul != 0 or n == 24:
             continue
         # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
-        print("#define TEST_VV_OP_rd%d( testnum, inst, val2, val1 )"%n + " \\\n\
+        vs2, vs1 = 16, 8
+        if n == 8:
+            vs2, vs1 = 24, 16
+        elif n == 16:
+            vs2, vs1 = 24, 8 
+        print("#define TEST_VV_OP_rd%d( testnum, inst, val2, val1, mask_addr )"%n + " \\\n\
         TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v%d, (x7);"%(vsew, n) + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+            %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
             la x7, val2; \\\n\
-            vle%d.v v16, (x7);"%vsew + " \\\n\
+            vle%d.v v%d, (x7);"%(vsew, vs2) + " \\\n\
             la x7, val1; \\\n\
-            vle%d.v v8, (x7);"%vsew + " \\\n\
-            inst v%d, v16, v8%s;"%(n, (", v0.t" if masked else ""))+" \\\n\
+            vle%d.v v%d, (x7);"%(vsew, vs1) + " \\\n\
+            inst v%d, v%d, v%d%s;"%(n, vs2, vs1, (", v0.t" if masked else ""))+" \\\n\
         ) ", file=f)
-    print("#define TEST_VV_OP_rd8( testnum, inst, val2, val1 ) \\\n\
-        TEST_CASE_LOOP( testnum, v8, \\\n\
-            VSET_VSEW_4AVL \\\n\
-            la x7, rd_origin_data; \\\n\
-            vle%d.v v8, (x7);"%vsew + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
-            la x7, val2; \\\n\
-            vle%d.v v24, (x7);"%vsew + " \\\n\
-            la x7, val1; \\\n\
-            vle%d.v v16, (x7);"%vsew + " \\\n\
-            inst v8, v24, v16%s;"%(", v0.t" if masked else "") + " ; \\\n\
-        )", file=f)
-    print("#define TEST_VV_OP_rd16( testnum, inst, val2, val1 ) \\\n\
-        TEST_CASE_LOOP( testnum, v16, \\\n\
-            VSET_VSEW_4AVL \\\n\
-            la x7, rd_origin_data; \\\n\
-            vle%d.v v16, (x7);"%vsew + " \\\n\
-            %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
-            la x7, val2; \\\n\
-            vle%d.v v24, (x7);"%vsew + " \\\n\
-            la x7, val1; \\\n\
-            vle%d.v v8, (x7);"%vsew + " \\\n\
-            inst v16, v24, v8%s;"%(", v0.t" if masked else "") + " \\\n\
-        )", file=f)
 
 
 def extract_operands(f, vsew):
@@ -134,6 +115,10 @@ def generate_tests(f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = T
         return 0
     loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
     step_bytes = int(vlen * lmul / 8)
+    vlmax = num_elem
+    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_num = vlmax * 2 + 4
+    j = 0
     if generate_vv:
         print("  #-------------------------------------------------------------", file=f)
         print("  # VV Tests", file=f)
@@ -141,19 +126,22 @@ def generate_tests(f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = T
 
         for i in range(loop_num):
             n += 1
-            print("  TEST_VV_OP( "+str(n)+",  %s.%s, "%(instr, instr_suffix) + "rs2_data+%d, rs1_data+%d)"%( i*step_bytes, i*step_bytes), file=f)
+            print("  TEST_VV_OP( "+str(n)+",  %s.%s, "%(instr, instr_suffix) + "rs2_data+%d, rs1_data+%d, mask_data+%d)"%( i*step_bytes, i*step_bytes, j*mask_bytes), file=f)
+            j = (j + 1) % mask_num
         for i in range(min(32, loop_num)):     
             k = i%31+1
             if k % lmul != 0 or k == 24 or k == 12 or k == 20 or k == 24:
                 continue
             n+=1
-            print("  TEST_VV_OP_rd%d( "%k+str(n)+",  %s.%s, "%(instr, instr_suffix)+"rs2_data+%d, rs1_data+%d)"%( i*step_bytes, i*step_bytes),file=f)
+            print("  TEST_VV_OP_rd%d( "%k+str(n)+",  %s.%s, "%(instr, instr_suffix)+"rs2_data+%d, rs1_data+%d, mask_data+%d)"%( i*step_bytes, i*step_bytes, j*mask_bytes),file=f)
+            j = (j + 1) % mask_num
             
             k = i%30+2
             if k % lmul != 0 or k == 8 or k == 16 or k == 24 or k == 12 or k == 20 or k == 24:
                 continue
             n +=1
-            print("  TEST_VV_OP_1%d( "%k+str(n)+",  %s.%s, "%(instr, instr_suffix)+"rs2_data+%d, rs1_data+%d)"%( i*step_bytes, i*step_bytes),file=f)
+            print("  TEST_VV_OP_1%d( "%k+str(n)+",  %s.%s, "%(instr, instr_suffix)+"rs2_data+%d, rs1_data+%d, mask_data+%d)"%( i*step_bytes, i*step_bytes, j*mask_bytes),file=f)
+            j = (j + 1) % mask_num
     vv_test_num = n
 
     if generate_vx:
@@ -164,7 +152,8 @@ def generate_tests(f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = T
         for i in range(loop_num):
             n += 1
             print("  TEST_VX_OP( "+str(n)+",  %s.vx, " %
-                instr+" rs2_data+%d, %s)"%( i*step_bytes, rs1_val[0]), file=f)
+                instr+" rs2_data+%d, %s, mask_data+%d)"%( i*step_bytes, rs1_val[0], j*mask_bytes), file=f)
+            j = (j + 1) % mask_num
     vx_test_num = n - vv_test_num
     if generate_vi:
         print("  #-------------------------------------------------------------", file=f)
@@ -174,7 +163,8 @@ def generate_tests(f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = T
         for i in range(loop_num):
             n += 1
             print("  TEST_VI_OP( "+str(n)+",  %s.vi, " %
-                instr+" rs2_data+%d, 15)"%( i*step_bytes), file=f)
+                instr+" rs2_data+%d, 15, mask_data+%d)"%( i*step_bytes, j*mask_bytes), file=f)
+            j = (j + 1) % mask_num
     vi_test_num = n - vx_test_num
 
     return (vv_test_num, vx_test_num, vi_test_num)

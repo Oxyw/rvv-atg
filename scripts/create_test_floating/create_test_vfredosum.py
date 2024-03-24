@@ -5,38 +5,6 @@ from scripts.create_test_floating.create_test_common import *
 
 instr = 'vfredosum'
 
-def generate_tests(f, vsew, lmul):
-    fdat_rs1 = "fdat_rs1"
-    fdat_rs2 = "fdat_rs2"
-    if vsew == 32:
-        rs1_val = rs1_val
-        rs2_val = rs2_val
-    elif vsew == 64:
-        rs1_val = rs1_val_64
-        rs2_val = rs2_val_64
-    
-    n = 1
-    print("  #-------------------------------------------------------------",file=f)
-    print("  # VV Tests",file=f)
-    print("  #-------------------------------------------------------------",file=f)
-    
-    for i in range(len(rs1_val)):
-        n += 1
-        print("  TEST_FP_VV_OP( "+str(n)+",  %s.vs,  "%instr+fdat_rs2+", "+fdat_rs1+" );",file=f)
-
-    print("  #-------------------------------------------------------------",file=f)
-    print("  # %s Tests (different register)"%instr,file=f)
-    print("  #-------------------------------------------------------------",file=f)
-    
-    for i in range(len(rs1_val)):     
-        k = i % 31 + 1
-        if k % lmul != 0 or k == 12 or k == 20 or k == 24: continue
-        n += 1
-        print("  TEST_FP_VV_OP_rd%d( "%k+str(n)+",  %s.vs, "%instr+fdat_rs2+", "+fdat_rs1+" );",file=f)
-
-        n += 1
-        print("  TEST_FP_VV_OP_1%d( "%k+str(n)+",  %s.vs, "%instr+fdat_rs2+", "+fdat_rs1+" );",file=f)
-
 
 def create_empty_test_vfredosum(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     logging.info("Creating empty test for {}".format(instr))

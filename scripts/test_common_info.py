@@ -1,5 +1,6 @@
 import os
 import re
+import math
 
 mask_data_ending = [0x11111111,0x86569d27,0x429ede3d,0x20219a51,0x91a8d5fd,0xbd8f6c65,0x466250f,0xe31ffa64,0xc737ad3a,0xe54c8c1e,0x7ca660db,0x692dadf,0x2c63c847,0xfbba7ae7,0x195b62bf,0xf600a3d1,0x34b80fd4,0x3aef5ff4,0x34267ad9,0x681454c0,0x67dd3492,0xb02d663e,0xb2d3f1c5,0x824d39ae]
 rd_origin_data = ["0x66da64aa","0xf682191a","0xfd2ce83f","0x67f9ab29","0x112e3ffd","0xc4d9b1e2","0x9ed4e137","0xb49ae54e","0xd075dd45","0x74daa72e","0x48324db4","0x167d97b5","0x8b536536","0xe85755eb","0x1cd86c0a","0x4c811ecf","0x8085dbf1","0x547cdce3","0x65d27882","0xb72d2ec4","0x954ee841","0xb36fd636","0xbc4988da","0xaea05c04","0xce7483a6","0xea0309d7","0x62498466","0x1cd29ac4","0x97f38b62","0x690bcf85","0x97f38b62","0x9bd83b8b"]
@@ -152,7 +153,7 @@ def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
     return arr
 
 
-def print_common_withmask_ending(n, f):
+def print_common_withmask_ending(n, f, num_elem):
     print(" #endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -163,7 +164,7 @@ def print_common_withmask_ending(n, f):
     \n\
     TEST_DATA\n\
     \n", file=f)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
     print("\
         RVTEST_DATA_END\n\
     \n", file=f)
@@ -248,7 +249,7 @@ def print_load_ending(f, n = 0):
     
     generate_idx_data(f)
     
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending_fixed(f)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
@@ -399,79 +400,60 @@ def print_loadlr_ending(f, n = 0):
     tdat26:  .word 0xf00ff00f\n\
     tdta27:  .zero 32\n\
     \n", file=f)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending_fixed(f)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
     arr = gen_arr_load(n)
     print_rvmodel_data(arr, f)
 
-def print_mask_origin_data_ending(f):
+def print_mask_origin_data_ending_fixed(f):
     # 24 words, mask_data + 0/64/128
-    print("\n.align 4", file=f)
-    print("mask_data:\n\
-	.word 0x11111111\n\
-	.word 0x86569d27\n\
-	.word 0x429ede3d\n\
-	.word 0x20219a51\n\
-	.word 0x91a8d5fd\n\
-	.word 0xbd8f6c65\n\
-	.word 0x466250f\n\
-	.word 0xe31ffa64\n\
-	.word 0xc737ad3a\n\
-	.word 0xe54c8c1e\n\
-	.word 0x7ca660db\n\
-	.word 0x692dadf\n\
-	.word 0x2c63c847\n\
-	.word 0xfbba7ae7\n\
-	.word 0x195b62bf\n\
-	.word 0xf600a3d1\n\
-	.word 0x34b80fd4\n\
-	.word 0x3aef5ff4\n\
-	.word 0x34267ad9\n\
-	.word 0x681454c0\n\
-	.word 0x67dd3492\n\
-	.word 0xb02d663e\n\
-	.word 0xb2d3f1c5\n\
-	.word 0x824d39ae\n\
- ", file=f)
-    # 32 words, mask_data + 0/64/128/192
-    print("\n.align 4", file=f)
-    print("rd_origin_data:\n\
-    .word 0x66da64aa\n\
-	.word 0xf682191a\n\
-	.word 0xfd2ce83f\n\
-	.word 0x67f9ab29\n\
-	.word 0x112e3ffd\n\
-	.word 0xc4d9b1e2\n\
-	.word 0x9ed4e137\n\
-	.word 0xb49ae54e\n\
-	.word 0xd075dd45\n\
-	.word 0x74daa72e\n\
-	.word 0x48324db4\n\
-	.word 0x167d97b5\n\
-	.word 0x8b536536\n\
-	.word 0xe85755eb\n\
-	.word 0x1cd86c0a\n\
-	.word 0x4c811ecf\n\
-	.word 0x8085dbf1\n\
-	.word 0x547cdce3\n\
-	.word 0x65d27882\n\
-	.word 0xb72d2ec4\n\
-	.word 0x954ee841\n\
-	.word 0xb36fd636\n\
-	.word 0xbc4988da\n\
-	.word 0xaea05c04\n\
-	.word 0xce7483a6\n\
-	.word 0xea0309d7\n\
-	.word 0x62498466\n\
-	.word 0x1cd29ac4\n\
-	.word 0x97f38b62\n\
-	.word 0x690bcf85\n\
-	.word 0x97f38b62\n\
-	.word 0x9bd83b8b\n\
-    ", file=f)
+    print_mask_data_ending_fixed(f)
+    # 32 words, rd_origin_data + 0/64/128/192
+    print_origin_data_ending(f)
 
+def print_mask_origin_data_ending(f, num_elem):
+    print_mask_data_ending(f, num_elem)
+    print_origin_data_ending(f)
+
+def print_mask_data_ending_fixed(f):
+    print("\n.align 4", file=f)
+    print("mask_data:", file=f)
+    for i in range(len(mask_data_ending)):
+        print(".word\t%s"%mask_data_ending[i], file=f)
+        
+def print_mask_data_ending(f, num_elem):
+    print("\n.align 8", file=f)
+    print("mask_data:", file=f)
+    num_bytes = math.ceil(num_elem / 8) # vlm to load mask: ceil(vl/8) bytes
+    num_words = math.ceil(num_bytes / 4)
+    # total: 2 * num_elem + 2 + 2
+    #all_one = '1' * num_elem
+    #all_zero = '0' * num_elem
+    for i in range(num_elem):
+        walking_one = 1 << i
+        walking_zero = ~(1 << i)
+        for j in range(num_words):
+            t1 = walking_one % (1 << 32)
+            walking_one = walking_one // (1 << 32)
+            print(".word\t%s"%'{:#016x}'.format(t1), file=f)
+        for j in range(num_words):
+            t0 = walking_zero % (1 << 32)
+            walking_zero = walking_zero // (1 << 32)
+            print(".word\t%s"%'{:#016x}'.format(t0), file=f)
+    #all_zero
+    for i in range(num_words):
+        print(".word\t%s"%'{:#016x}'.format(0x0), file=f)
+    #all_one
+    for i in range(num_words):
+        print(".word\t%s"%'{:#016x}'.format(0xffffffff), file=f)
+    # checkerboard
+    for i in range(num_words):
+        print(".word\t%s"%'{:#016x}'.format(0x55555555), file=f)
+    for i in range(num_words):
+        print(".word\t%s"%'{:#016x}'.format(0xaaaaaaaa), file=f)
+    
   
 def print_origin_data_ending(f):
     print("\n.align 4", file=f)
@@ -530,7 +512,7 @@ def print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, test_num_tuple, vsew, 
         for i in range(test_num_tuple[2] * num_elem):
             print_data_width_prefix(f, vsew)
             print("0x5201314", file=f)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
 
     print("\n\
     RVTEST_DATA_END\n\
@@ -604,7 +586,7 @@ def print_common_ending_rs1rs2rd_vw(rs1_val, rs2_val, test_num_tuple, vsew, f, r
         for i in range(test_num_tuple[3] * num_elem):
             print_data_width_prefix(f, vsew * 2)
             print("0x5201314", file=f)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
@@ -662,7 +644,7 @@ def print_common_ending_rs1rs2rd_vvvfrv(rs1_val, rs2_val, test_num_tuple, vsew, 
         for i in range(test_num_tuple[2] * num_elem):
             print_data_width_prefix(f, vsew)
             print("0x5201314", file=f)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
 
     print("\n\
     RVTEST_DATA_END\n\
@@ -738,7 +720,7 @@ def print_common_ending_rs1rs2rd_wvwf(rs1_val, rs2_val, test_num_tuple, vsew, f,
         for i in range(test_num_tuple[3] * num_elem):
             print_data_width_prefix(f, vsew * 2)
             print("0x5201314", file=f)
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
 
     print("\n\
     RVTEST_DATA_END\n\
@@ -791,7 +773,7 @@ def print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs1_int_val, test_num_tuple, vse
         print_data_width_prefix(f, vsew * rd_data_multiplier)
         print("0x5201314", file=f)
 
-    print_mask_origin_data_ending(f)
+    print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)

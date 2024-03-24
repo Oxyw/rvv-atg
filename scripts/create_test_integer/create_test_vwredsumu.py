@@ -20,7 +20,7 @@ def create_empty_test_vwredsumu(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     
 
     # Common const information
-    print_common_withmask_ending(0, f)
+    print_common_withmask_ending(0, f, int(vlen * lmul / vsew))
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -50,7 +50,7 @@ def create_first_test_vwredsumu(xlen, vlen, vsew, lmul, vta, vma, output_dir, rp
     n = generate_tests_vwred(f, rs1_val, rs2_val, instr, lmul, instr_suffix='vs')
 
     # Common const information
-    print_common_withmask_ending(n, f)
+    print_common_withmask_ending(n, f, int(vlen * lmul / vsew))
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

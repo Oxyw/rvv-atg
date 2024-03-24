@@ -8,7 +8,7 @@ instr = 'vfirst'
 num_elem = 0
 
 
-def generate_walking_data_seg_vpopc(f, vsew, vlen):
+def generate_walking_data_seg_vfirst(f, vsew, vlen):
     # Generate walking ones
     n = 0
     if vsew == 8:
@@ -20,7 +20,7 @@ def generate_walking_data_seg_vpopc(f, vsew, vlen):
     elif vsew == 64:
         data_width_prefix = "dword"
     for i in range(num_elem + 1):
-        print("walking_dat_vpopc%d:"%n, file=f)
+        print("walking_dat_vfirst%d:"%n, file=f)
         print_data_width_prefix(f, 64)
         print("0b", end="", file=f)
         print(i * "0", end="", file=f)
@@ -33,7 +33,7 @@ def generate_walking_data_seg_vpopc(f, vsew, vlen):
         n = n + 1
 
     for j in range(num_elem + 1):
-        print("walking_dat_vpopc%d:"%n, file=f)
+        print("walking_dat_vfirst%d:"%n, file=f)
         print_data_width_prefix(f, 64)
         print("0b", end="", file=f)
         print(j * "1", end="", file=f)
@@ -46,43 +46,43 @@ def generate_walking_data_seg_vpopc(f, vsew, vlen):
         n = n + 1
 
 
-def generate_macros_vpopc(f, vsew, lmul):
+def generate_macros_vfirst(f, vsew, lmul):
     lmul_1 = 1 if lmul < 1 else int(lmul)
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     masked = True if os.environ['RVV_ATG_MASKED'] == "True" else False
     # generate the macro
-    print("#undef TEST_VPOPC_OP \n\
-          #define TEST_VPOPC_OP( testnum, inst,  vm_addr ) \\\n\
+    print("#undef TEST_VFIRST_OP \n\
+          #define TEST_VFIRST_OP( testnum, inst,  vm_addr, mask_addr ) \\\n\
     TEST_CASE_SCALAR_SETVSEW_AFTER(testnum, x14,  \\\n\
         VSET_VSEW_4AVL \\\n\
         la  x2, vm_addr; \\\n\
         vle%d.v v16, (x2);"%vsew + " \\\n\
-        %s "%("la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+        %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
         inst x14, v16%s; "%(", v0.t" if masked else "") + " \\\n\
     )", file=f)
-    # generate the macro， 测试v1-v32源寄存器
+    
     for i in range(1, 32):
         if i == 7 or i  == 16 or i == 3:
             continue
-        print("#define TEST_VPOPC_OP_rs2_%d( testnum, inst,  vm_addr ) \\\n\
+        print("#define TEST_VFIRST_OP_rs2_%d( testnum, inst,  vm_addr, mask_addr ) \\\n\
             TEST_CASE_SCALAR_SETVSEW_AFTER(testnum, x14,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 la  x2, vm_addr; \\\n\
-                vle%d.v v%d, (x2); \\\n\
-                %s "%(i, vsew, i, "la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+                vle%d.v v%d, (x2);"%(i, vsew, i)+" \\\n\
+                %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
                 inst x14, v%d%s; "%(i, (", v0.t" if masked else "")) + " \\\n\
             )", file=f)
     
     for i in range(1, 32):
         if i == 7 or i  == 16 or i == 3 or i == 20: # 20 is signature base 
             continue
-        print("#define TEST_VPOPC_OP_rd_%d( testnum, inst,  vm_addr ) \\\n\
+        print("#define TEST_VFIRST_OP_rd_%d( testnum, inst,  vm_addr, mask_addr ) \\\n\
             TEST_CASE_SCALAR_SETVSEW_AFTER(testnum, x%d,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 la  x2, vm_addr; \\\n\
-                vle%d.v v16, (x2); \\\n\
-                %s "%(i, i, vsew, "la x7, mask_data; \\\n    vle%d.v v0, (x7); \\\n  "%vsew if masked else "")+" \
+                vle%d.v v16, (x2);"%(i, i, vsew)+" \\\n\
+                %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
                 inst x%d, v16%s; "%(i, (", v0.t" if masked else "")) + " \\\n\
             )", file=f)
 
@@ -94,13 +94,19 @@ def generate_tests_vfirst(f, vlen, vsew, lmul):
     vemul = int(vsew / vsew * lmul)
     if vemul == 0:
         vemul = 1
+    
+    vlmax = num_elem
+    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_num = vlmax * 2 + 4
+    j = 0
     #########################vfirst####################################################################################################
     print("  #-------------------------------------------------------------",file=f)
     print("  # vfirst tests",file=f)
     print("  #-------------------------------------------------------------",file=f)
     for i in range(0, 2 * num_elem + 2):
-        print("TEST_VPOPC_OP( %d, vfirst.m,  walking_dat_vpopc%d );" % (num_test, i), file=f)
+        print("TEST_VFIRST_OP( %d, vfirst.m,  walking_dat_vfirst%d, mask_data+%d );" % (num_test, i, j*mask_bytes), file=f)
         num_test = num_test + 1
+        j = (j + 1) % mask_num
 
     return num_test
 
@@ -119,8 +125,8 @@ def print_ending_vfirst(vlen, vsew, f, n):
     TEST_DATA\n\
     ", file=f)
 
-    generate_walking_data_seg_vpopc(f, vsew, vlen)
-    print_mask_origin_data_ending(f)
+    generate_walking_data_seg_vfirst(f, vsew, vlen)
+    print_mask_origin_data_ending(f, num_elem)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)
@@ -136,7 +142,7 @@ def create_empty_test_vfirst(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     path = "%s/%s_empty.S" % (output_dir, instr)
     f = open(path, "w+")
 
-    generate_macros_vpopc(f, vsew, lmul)
+    generate_macros_vfirst(f, vsew, lmul)
 
     # Common header files
     print_common_header(instr, f)
