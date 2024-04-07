@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import *
+from scripts.create_test_floating.create_test_common import print_ending
 import re
 
 instr = 'vfmerge'
@@ -59,11 +59,13 @@ def generate_macros(f, vsew):
             )", file = f)
 
 
-def generate_tests(f, vsew, lmul):
+def generate_tests(f, vsew, lmul, rs1_val, rs2_val):
+    '''
     global rs1_val, rs2_val
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
+    '''
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul_1 = 1 if lmul < 1 else int(lmul)
@@ -131,11 +133,14 @@ def create_first_test_vfmerge(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_
     # Common header files
     print_common_header(instr, f)
 
+    # Extract operands
+    rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
+
     # Generate macros to test diffrent register
     generate_macros(f, vsew)
 
     # Generate tests
-    num_tests_tuple = generate_tests(f, vsew, lmul)
+    num_tests_tuple = generate_tests(f, vsew, lmul, rs1_val, rs2_val)
 
     # Common const information
     print_common_ending_rs1rs2rd_vvvfrv(rs1_val, rs2_val, num_tests_tuple, vsew, f)

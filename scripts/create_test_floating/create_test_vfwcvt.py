@@ -1,11 +1,9 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import *
+from scripts.create_test_floating.create_test_common import print_ending
 
 instr = 'vfwcvt'
-rs2_val = ['0x00000000', '0x80000000', '0x00000001', '0x80000001', '0x00000002', '0x807FFFFE', '0x007FFFFF', '0x807FFFFF', '0x00800000', '0x80800000', '0x00800001', '0x80855555', '0x7F7FFFFF', '0xFF7FFFFF', '0x3F800000', '0xBF800000', '0x00000000', '0x80000000', '0x00000001', '0x80000001', '0x00000002', '0x807FFFFE', '0x007FFFFF', '0x807FFFFF', '0x00800000', '0x80800000', '0x00800001', '0x80855555', '0x7F7FFFFF', '0xFF7FFFFF', '0x3F800000', '0xBF800000',
-           '0x7ecd0345', '0x1aa5b443', '0x95ba65a9', '0x0f16e354', '0x64c51a55', '0x3e894d78', '0x13905c93', '0x72ce5a7d', '0x40be3b56', '0x0c6977da', '0xb0881d34', '0x05335fbc', '0xcb146ae9', '0x6a2ecf99', '0x119b19b9', '0x1ad508c2', '0x85e82f60', '0x16aef408', '0x7dd46fc9', '0x96bb4369', '0x0f4e3fd6', '0x8ea8b9ad', '0x7832a0b1', '0xc2eae431', '0x92c6ae02', '0x5c79e30e', '0x6fa6a71f', '0x2ed65769', '0xaa246101', '0x4f265892', '0x6eaaa4fd', '0xb186515d', ]
 
 
 def generate_macros_vfwcvt(f, lmul):
@@ -53,15 +51,17 @@ def generate_macros_vfwcvt(f, lmul):
             )", file = f)
 
 
-def generate_tests_vfwcvt(instr, f, lmul):
+def generate_tests_vfwcvt(instr, f, lmul, rs1_val, rs2_val):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
 
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
@@ -79,7 +79,7 @@ def generate_tests_vfwcvt(instr, f, lmul):
     j = 0
     
     print("  #-------------------------------------------------------------",file=f)
-    print("  # vfcvt Tests",file=f)
+    print("  # vfwcvt Tests",file=f)
     print("  #-------------------------------------------------------------",file=f)
     
     # for i in range(loop_num):
@@ -101,7 +101,7 @@ def generate_tests_vfwcvt(instr, f, lmul):
     #     n += 1
     
     print("  #-------------------------------------------------------------",file=f)
-    print("  # vfcvt Tests (different register)",file=f)
+    print("  # vfwcvt Tests (different register)",file=f)
     print("  #-------------------------------------------------------------",file=f)
     
 
@@ -172,7 +172,7 @@ def create_empty_test_vfwcvt(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending(f, generate_data=False)
+    print_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -192,11 +192,15 @@ def create_first_test_vfwcvt(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_p
     # Common header files
     print_common_header(instr, f)
 
+    # Extract operands
+    rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
+    rs2_val = rs1_val
+
     # Generate macros to test diffrent register
     generate_macros_vfwcvt(f, lmul)
 
     # Generate tests
-    num_tests_tuple = generate_tests_vfwcvt(instr, f, lmul)
+    num_tests_tuple = generate_tests_vfwcvt(instr, f, lmul, rs1_val, rs2_val)
 
     # Common const information
     print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs2_val, num_tests_tuple, vsew, f, is_widen = True)

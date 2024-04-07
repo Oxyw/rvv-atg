@@ -1,20 +1,10 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import *
+from scripts.create_test_floating.create_test_common import print_ending
 import re
 
 instr = 'vfcvt'
-
-
-def generate_fdat_seg(f):
-    print("fdat_rs1:", file=f)
-    for i in range(len(rs1_val)):
-        print("fdat_rs1_" + str(i) + ":  .word " + rs1_val[i], file=f)
-    print("", file=f)
-    print("fdat_rs2:", file=f)
-    for i in range(len(rs2_val)):
-        print("fdat_rs2_" + str(i) + ":  .word " + rs2_val[i], file=f)
 
 
 def generate_macros_vfcvt(f, lmul):
@@ -51,19 +41,18 @@ def generate_macros_vfcvt(f, lmul):
                 inst v%d, v8; "%n + " \\\n\
             )", file = f)
 
-def extract_operands(f, rpt_path):
-    # Floating pooints tests don't need to extract operands, rs1 and rs2 are fixed
-    return 0
 
-def generate_tests_vfcvt(instr, f, lmul):
+def generate_tests_vfcvt(instr, f, lmul, rs1_val, rs2_val):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
 
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
@@ -146,11 +135,15 @@ def create_first_test_vfcvt(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     # Common header files
     print_common_header(instr, f)
 
+    # Extract operands
+    rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
+    rs2_val = rs1_val
+
     # Generate macros to test diffrent register
     generate_macros_vfcvt(f, lmul)
 
     # Generate tests
-    num_tests_tuple = generate_tests_vfcvt(instr, f, lmul)
+    num_tests_tuple = generate_tests_vfcvt(instr, f, lmul, rs1_val, rs2_val)
 
     # Common const information
     print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs2_val, num_tests_tuple, vsew, f)

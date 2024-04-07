@@ -199,6 +199,30 @@ def extract_operands(f, rpt_path):
     
     return rs1_val, rs2_val
 
+def extract_operands_fp(f, rpt_path):
+    rs1_val = []
+    rs2_val = []
+    f = open(rpt_path)
+    line = f.read()
+    matchObj = re.compile(r"rs1_val ?== ?'(.*?)'")
+    rs1_val = matchObj.findall(line)
+    matchObj = re.compile(r"rs2_val ?== ?'(.*?)'")
+    rs2_val = matchObj.findall(line)
+    f.close()
+    
+    vlen = int(os.environ['RVV_ATG_VLEN'])
+    lmul = float(os.environ['RVV_ATG_LMUL'])
+    vsew = float(os.environ['RVV_ATG_VSEW'])
+    num_elem = int(vlen * lmul / vsew)
+    loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
+    while loop_num == 0 and len(rs1_val) > 0 and len(rs2_val) > 0:
+        print(len(rs1_val), len(rs2_val), num_elem, loop_num)
+        rs1_val = rs1_val * 2
+        rs2_val = rs2_val * 2
+        loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
+    
+    return rs1_val, rs2_val
+
 def is_overlap(rd, rd_mul, rs, rs_mul):
     return not ((rd > rs + rs_mul - 1) or (rd + rd_mul - 1 < rs))
 

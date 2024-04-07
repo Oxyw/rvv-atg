@@ -1,6 +1,7 @@
 import os
 from scripts.test_common_info import print_rvmodel_data, gen_arr_compute
 
+'''
 rs1_val = ["0x00000000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000",
            "0x00800000", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x807FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x007FFFFF", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x807FFFFE", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x00000002", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x80000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x00000001", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x80000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", "0x00000000", 
            '0x16b77bce', '0x85a8a33c', '0xbe82002a', '0x6b4eed81', '0xfcf2b7b2', '0xb1a3f397', '0x81815039', '0x7df4c24f', '0x0827c929', '0xe1f1c6ec', '0x9b111081', '0x08c53c5a', '0x16e35174', '0x20553b83', '0xf4ed3db2', '0x5879b2ca', '0xf80d83b9', '0x7b48384f', '0x89a6c1a0', '0x31fe5439', '0x6ee2f5aa', '0x330f5715', '0x9f46020f', '0xb697e1c3', '0xf518acf6', '0x3958ea56', '0x56a29c95', '0xef286e01', '0xf6cad350', '0xe95400f6', '0x0b2ac811', '0x3ced78db', '0x75809524', '0xc5e59fb2', '0xdd81fa0a', '0xec9fb18d', '0x30e1830a', '0x21d2bbb0', '0x731a1760', '0x19167ebd', '0x7e537a04', '0xcf9dc475', '0x17f847a1', '0x5f4e2f05', '0x11065906', '0xa9663dbb', '0xb6d5707b', '0xef201e7b', '0xb4a84974', '0xc9feb8d1', '0xba38c7b1', '0x1877b042', '0x91778cbb', '0x2e715ec9', '0xebc88fd7', '0x6947de05', '0xaec12b86', '0x6164c29e', '0xba68fa1d', '0x17a54142', '0xbb7b049e', '0x08fab1e5', '0x1af6bb18', '0x74348a1d', '0xf41f5f9b', '0x604f267a', '0x8543a485', '0x17fca002', '0x3777625d', '0xca42df1f', '0xe9591298', '0x655428d1', '0x678995cf', '0x7ea84660', '0x049f1faf', '0x9a6ccdab', '0xf75264e4', '0x5b832e4f', '0x047e6b3b', '0xc18c4e25', '0x6676bf0e', '0x86738089', '0x1ee4a5ed', '0xb9545c29', '0x2c7cb95f', '0x8ab6881d', '0x32dc44c0', '0x7915e449', '0xb68216c7', '0x53c4ffc4', '0xc01a2b07', '0x6d56c00d', '0x231896cb', '0x3a6c685c', '0xe57e27bd', '0x3e6f7cbe', '0x8e74e2da', '0xfcea6243', '0x80eedc35', '0x048d92fb', '0xe8e803f4', '0x12c54b7b', '0x2d633cae', '0xbe8c5af3', '0x379def6c', '0xe298ae9a', '0x626b7cc5', '0x8f61b3a5', '0xe4219193', '0x01b8cfcd', '0x04bfcdf8', '0xd6cbbf81', '0x4bd075af', '0xe291d09b', '0xf0503b64', '0x21124d60', '0x17d5856b', '0x7989bf32', '0x6b84a91f', '0x3019a087', '0x01c79214', '0xea939be7', '0xc375122d', '0x116ec3d2', '0x2d7eeffe', '0xe013be07', '0xb45484fc', '0x2dcda7f1', 
@@ -40,16 +41,17 @@ while _loop_num == 0:
     rs1_val_64 = rs1_val_64 * 2
     rs2_val_64 = rs2_val_64 * 2
     _loop_num = int(min(len(rs1_val), len(rs2_val)) / _num_elem)
+'''
 
-
-def generate_fdat_seg(f):
+    
+def generate_fdat_seg(f, rs1_val, rs2_val, vsew = 32):
     print("fdat_rs1:", file=f)
     for i in range(len(rs1_val)):
-        print("fdat_rs1_" + str(i) + ":  .word " + rs1_val[i], file=f)
+        print("fdat_rs1_" + str(i) + ":  .%s "%("word" if vsew == 32 else "dword") + rs1_val[i], file=f)
     print("", file=f)
     print("fdat_rs2:", file=f)
     for i in range(len(rs2_val)):
-        print("fdat_rs2_" + str(i) + ":  .word " + rs2_val[i], file=f)
+        print("fdat_rs2_" + str(i) + ":  .%s "%("word" if vsew == 32 else "dword") + rs2_val[i], file=f)
 
 
 def valid_aligned_regs(reg):
@@ -772,14 +774,16 @@ def generate_macros_vvmvfm(f, lmul, test_vv = True):
         ) ", file=f)
 
 
-def generate_tests(instr, f, vsew, lmul, suffix="vv", test_vv=True, test_vf=True):
+def generate_tests(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vv", test_vv=True, test_vf=True):
     # lmul = 1 if lmul < 1 else int(lmul)
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
+    '''
 
     if instr == "vfdiv" or instr == "vfrdiv" or instr == "vfrec7":
         # For the divison instruction, the operands cannot be zero
@@ -813,7 +817,7 @@ def generate_tests(instr, f, vsew, lmul, suffix="vv", test_vv=True, test_vf=True
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
 
-    num_elem = int((vlen * lmul / vsew))
+    num_elem = int(vlen * lmul / vsew)
     if num_elem == 0:
         return 0
     loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
@@ -888,15 +892,17 @@ def generate_tests(instr, f, vsew, lmul, suffix="vv", test_vv=True, test_vf=True
     
     return (vv_test_num, vf_test_num, rv_test_num)
 
-def generate_tests_v_op(instr, f, lmul):
+def generate_tests_v_op(instr, f, lmul, rs1_val, rs2_val):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
     if instr == "vfdiv" or instr == "vfrdiv" or instr == "vfrec7":
         # For the divison instruction, the operands cannot be zero
         # So we need to delete it
@@ -932,7 +938,7 @@ def generate_tests_v_op(instr, f, lmul):
     num_elem = int((vlen * lmul / vsew))
     if num_elem == 0:
         return 0
-    loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
+    loop_num = int(len(rs1_val) / num_elem)
     step_bytes = int(vlen * lmul / 8)
     
     vlmax = num_elem
@@ -972,15 +978,17 @@ def generate_tests_v_op(instr, f, lmul):
 
 
 
-def generate_tests_vfmacc(instr, f, vsew, lmul):
+def generate_tests_vfmacc(instr, f, vsew, lmul, rs1_val, rs2_val):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
     num_elem = int((vlen * lmul / vsew))
@@ -1036,15 +1044,17 @@ def generate_tests_vfmacc(instr, f, vsew, lmul):
     vf_test_num = n - vv_test_num
     return (vv_test_num, vf_test_num, 0)
 
-def generate_tests_vfwmacc(instr, f, vsew, lmul):
+def generate_tests_vfwmacc(instr, f, vsew, lmul, rs1_val, rs2_val):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
     num_elem = int((vlen * lmul / vsew))
@@ -1101,14 +1111,17 @@ def generate_tests_vfwmacc(instr, f, vsew, lmul):
     vf_test_num = n - vv_test_num
     return (vv_test_num, vf_test_num, 0)
 
-def generate_tests_vfred(instr, f, vsew, lmul, suffix="vf", test_vv=True, test_vf=True, test_rv=False):
+def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", test_vv=True, test_vf=True, test_rv=False):
     # lmul = 1 if lmul < 1 else int(lmul)
+    # TODO
     fdat_rs1 = "fdat_rs1"
     fdat_rs2 = "fdat_rs2"
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
+    '''
 
     if instr == "vfdiv" or instr == "vfrdiv" or instr == "vfrec7":
         # For the divison instruction, the operands cannot be zero
@@ -1196,15 +1209,17 @@ def generate_tests_vfred(instr, f, vsew, lmul, suffix="vf", test_vv=True, test_v
 
     return n
 
-def generate_tests_widen(instr, f, vsew, lmul,  test_wvwf = False):
+def generate_tests_widen(instr, f, vsew, lmul, rs1_val, rs2_val, test_wvwf = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
     num_elem = int((vlen * lmul / vsew))
@@ -1279,15 +1294,17 @@ def generate_tests_widen(instr, f, vsew, lmul,  test_wvwf = False):
         wf_test_num = n - vf_test_num - vv_test_num - wv_test_num
     return (vv_test_num, vf_test_num, wv_test_num, wf_test_num)
 
-def generate_tests_vvmvfm(instr, f, lmul, test_vv=True):
+def generate_tests_vvmvfm(instr, f, lmul, rs1_val, rs2_val, test_vv=True):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
         rs1_val = rs1_val_64
         rs2_val = rs2_val_64
     rs1_val = list(set(rs1_val))
     rs2_val = list(set(rs2_val))
+    '''
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
     num_elem = int((vlen * lmul / vsew))
@@ -1355,8 +1372,9 @@ def generate_tests_vvmvfm(instr, f, lmul, test_vv=True):
     vx_test_num = n - vv_test_num
     
     return (vv_test_num, vx_test_num, 0)
-    
-def print_ending(f, generate_data = True, test_tuples = (0,0,0)):
+
+
+def print_ending(f, generate_data = False, rs1_val = None, rs2_val = None, test_tuples = (0,0,0)):
     print("#endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -1370,7 +1388,7 @@ def print_ending(f, generate_data = True, test_tuples = (0,0,0)):
     ", file=f)
 
     if generate_data:
-        generate_fdat_seg(f)
+        generate_fdat_seg(f, rs1_val, rs2_val)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)

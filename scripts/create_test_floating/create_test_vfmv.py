@@ -1,19 +1,10 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import *
+from scripts.create_test_floating.create_test_common import generate_fdat_seg
 import re
 
 instr = 'vfmv'
-
-def generate_fdat_seg(f, vsew):
-    print("fdat_rs1:", file=f)
-    for i in range(len(rs1_val)):
-        print("fdat_rs1_" + str(i) + ":  .%s "%("word" if vsew == 32 else "dword") + rs1_val[i], file=f)
-    print("", file=f)
-    print("fdat_rs2:", file=f)
-    for i in range(len(rs2_val)):
-        print("fdat_rs2_" + str(i) + ":  .%s "%("word" if vsew == 32 else "dword") + rs2_val[i], file=f)
 
 
 def generate_macros(f, vsew):
@@ -73,57 +64,61 @@ def generate_macros(f, vsew):
             fcvt.w.s x7, f7; \n" % (n, "w" if vsew == 32 else "d", n, n), file=f)
 
 
-def generate_tests(f, lmul):
+def generate_tests(f, lmul, rs1_val, rs2_val):
     n = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.f.s / vfmv.v.f Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(len(rs1_val) - 1):
-        print("  TEST_VFMVF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
         n += 1
+        print("  TEST_VFMVF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
+
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.f.s / vfmv.s.f Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(len(rs1_val) - 1):
-        print("  TEST_VFMVS_OP( " + str(n) + ",  fdat_rs2_" + str(i) + " );", file=f)
         n += 1
+        print("  TEST_VFMVS_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
 
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.f.s / vfmv.v.f Tests (different register)", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(1, 32):
+        n += 1
         print("  TEST_VFMVF_OP_rs_%d( " % i + str(n) +
               ",  fdat_rs1_" + str(i) + " );", file=f)
-        n += 1
         if i % lmul == 0:
+            n += 1
             print("  TEST_VFMVF_OP_rsrd_%d( " %
                 i + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
-            n += 1
+        n += 1
         print("  TEST_VFMVF_OP_rd_%d( " % i + str(n) +
               ",  fdat_rs1_" + str(i) + " );", file=f)
-        n += 1
+
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.f.s / vfmv.s.f Tests (different register)", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(1, 32):
+        n += 1
         print("  TEST_VFMVS_OP_rs_%d( " % i + str(n) +
               ",  fdat_rs1_" + str(i) + " );", file=f)
-        n += 1
+        
         if i % lmul == 0:
+            n += 1
             print("  TEST_VFMVS_OP_rsrd_%d( " %
                 i + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
-            n += 1
+        n += 1  
         print("  TEST_VFMVS_OP_rd_%d( " % i + str(n) +
               ",  fdat_rs1_" + str(i) + " );", file=f)
-        n += 1
+    
     return n
 
 
-def print_ending_vfmv(f, vsew, num_tests):
+def print_ending_vfmv(f, vsew, num_tests, generate_data=False, rs1_val=None, rs2_val=None):
     print("  #endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -136,7 +131,8 @@ def print_ending_vfmv(f, vsew, num_tests):
     \n\
     ", file=f)
 
-    generate_fdat_seg(f, vsew)
+    if generate_data:
+        generate_fdat_seg(f, rs1_val, rs2_val, vsew)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)
@@ -154,7 +150,7 @@ def create_empty_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending_vfmv(f, vsew, 0)
+    print_ending_vfmv(f, vsew, 0, generate_data=False)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -174,14 +170,17 @@ def create_first_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pat
     # Common header files
     print_common_header(instr, f)
 
+    # Extract operands
+    rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
+
     # Generate macros to test diffrent register
     generate_macros(f, vsew)
 
     # Generate tests
-    n = generate_tests(f, lmul)
+    n = generate_tests(f, lmul, rs1_val, rs2_val)
 
     # Common const information
-    print_ending_vfmv(f, vsew, n)
+    print_ending_vfmv(f, vsew, n, generate_data = True, rs1_val = rs1_val, rs2_val = rs2_val)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
