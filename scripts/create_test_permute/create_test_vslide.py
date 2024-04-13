@@ -128,7 +128,7 @@ def generate_macros_vslide(f, vlen, vsew, lmul):
 
 def generate_tests_vslide(f, vsew, lmul):
     lmul = 1 if lmul < 1 else int(lmul)
-    n = 1
+    n = 0
     if num_group_walking == 0:
         return 0
     vlmax = num_elem
@@ -141,18 +141,18 @@ def generate_tests_vslide(f, vsew, lmul):
 
     for i in range(num_group_walking):
         for k in range(0, num_elem + 1, 10):
+            n += 1
             print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslideup.vx, rd_data, " + str(k) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
-            n += 1
             j = (j + 1) % mask_num
-            print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslidedown.vx, rd_data, " + str(k) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
             n += 1
+            print("  TEST_VSLIDE_VX_OP( " + str(n) + ", vslidedown.vx, rd_data, " + str(k) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
             if k < 31:
+                n += 1
                 print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslideup.vi, rd_data, " + str(k % 31) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
-                n += 1
                 j = (j + 1) % mask_num
-                print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslidedown.vi, rd_data, " + str(k % 31) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
                 n += 1
+                print("  TEST_VSLIDE_VI_OP( " + str(n) + ", vslidedown.vi, rd_data, " + str(k % 31) + ", walking_data%d, mask_data+%d );" % (i, j*mask_bytes), file=f)
                 j = (j + 1) % mask_num
     vx_test_num = n
     print("  #-------------------------------------------------------------", file=f)
@@ -161,22 +161,22 @@ def generate_tests_vslide(f, vsew, lmul):
 
     for i in range(1, 32):
         if i != 8 and i != 16 and i != 24 and i % lmul == 0 and i != 12 and i != 20:
+            n += 1
             print("  TEST_VSLIDE_VX_OP_rd_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
-            n += 1
             j = (j + 1) % mask_num
-            print("  TEST_VSLIDE_VX_OP_rs2_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             n += 1
+            print("  TEST_VSLIDE_VX_OP_rs2_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
             if i < 31:
+                n += 1
                 print("  TEST_VSLIDE_VI_OP_rd_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
-                n += 1
                 j = (j + 1) % mask_num
-                print("  TEST_VSLIDE_VI_OP_rs2_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
                 n += 1
+                print("  TEST_VSLIDE_VI_OP_rs2_%d( " % i + str(n) + ", vslideup.vi, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
                 j = (j + 1) % mask_num
         if i != 1 and i != 7 and i % lmul == 0 and i != 24 and i != 12 and i != 20:
-            print("  TEST_VSLIDE_VX_OP_rs1_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             n += 1
+            print("  TEST_VSLIDE_VX_OP_rs1_%d( " % i + str(n) + ", vslideup.vx, rd_data, " + str(i % (num_elem+1)) + ", walking_data%d, mask_data+%d );" % (i % num_group_walking, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
     vi_test_num = n - vx_test_num
     return (vx_test_num, vi_test_num, 0)

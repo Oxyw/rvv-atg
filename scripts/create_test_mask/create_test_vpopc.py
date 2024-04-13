@@ -84,13 +84,13 @@ def generate_macros_vpopc(f, vsew, lmul):
             )", file=f)
 
 def generate_tests_vpopc(f, vlen, vsew, lmul):
-    num_test = 1
+    num_test = 0
     num_elem = int(vlen / vsew)
     vemul = int(vsew / vsew * lmul)
     if vemul == 0:
         vemul = 1
     
-    vlmax = num_elem
+    vlmax = int(vlen * lmul / vsew) # TODO
     mask_bytes = 32 # math.ceil(vlmax / 8)
     mask_num = vlmax * 2 + 4
     j = 0
@@ -99,8 +99,8 @@ def generate_tests_vpopc(f, vlen, vsew, lmul):
     print("  # %s tests" % instr,file=f)
     print("  #-------------------------------------------------------------",file=f)
     for i in range(0, 2 * num_elem + 2):
-        print("TEST_VPOPC_OP( %d, vpopc.m,  walking_dat_vpopc%d, mask_data+%d );" % (num_test, i, j*mask_bytes), file=f)
         num_test = num_test + 1
+        print("TEST_VPOPC_OP( %d, vpopc.m,  walking_dat_vpopc%d, mask_data+%d );" % (num_test, i, j*mask_bytes), file=f)
         j = (j + 1) % mask_num
 
     return num_test

@@ -418,7 +418,7 @@ def generate_macros_vfwmacc(f, vsew, lmul):
             inst v%d, f1, v8%s;"%(n, ", v0.t" if masked else "") + " \\\n\
         )", file=f)
 
-def generate_macros_vfred(f, vsew, lmul, test_vv=True, test_vf=True, test_rv=False):
+def generate_macros_vfred(f, vsew, lmul, test_vv=True):
     masked = True if os.environ['RVV_ATG_MASKED'] == "True" else False
     print("#define TEST_FPRED_VV_OP( testnum, inst, val1_addr, val2_addr ) \\\n\
         TEST_CASE_LOOP_FP( testnum, v24,    \\\n\
@@ -430,16 +430,6 @@ def generate_macros_vfred(f, vsew, lmul, test_vv=True, test_vf=True, test_rv=Fal
             vfmv.s.f v16, f1; \\\n\
             fl%s f2, %d(a0); "%(('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8)) + "\\\n\
             inst v24, v8, v16%s;"%(", v0.t" if masked else "") + " \\\n\
-        )", file=f)
-    print("#define TEST_FPRED_VF_OP( testnum, inst,  val1_addr, val2_addr ) \\\n\
-        TEST_CASE_LOOP_FP( testnum, v24,     \\\n\
-            la a0, val1_addr; \\\n\
-            fl%s f0, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-            la a0, val2_addr; \\\n\
-            fl%s f1, %d(a0); "%(('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4)) + "\\\n\
-            vfmv.s.f v8, f0; \\\n\
-            fl%s f2, %d(a0); "%(('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8)) + " \\\n\
-            inst v24, v8, f1%s;"%(", v0.t" if masked else "") + " \\\n\
         )", file=f)
     # lmul = 1 if lmul < 1 else int(lmul)
     if test_vv:
@@ -473,33 +463,7 @@ def generate_macros_vfred(f, vsew, lmul, test_vv=True, test_vf=True, test_rv=Fal
                 fl%s f2, %d(a0); \\\n\
                 inst v%d, v%d, v%d%s; \\\n\
             )" % (n,  n, ('d' if vsew == 64 else 'w'), ('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4), rs2, rs1, ('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8), n, rs2, rs1, ", v0.t" if masked else ""), file=f)
-    if test_vf:
-        for n in range(1,32):
-            if n == 2 or n % lmul != 0:
-                continue
-            print("#define TEST_FPRED_VF_OP_rs1_%d( testnum, inst, val1_addr, val2_addr )"%n + " \\\n\
-                TEST_CASE_LOOP_FP( testnum, v24,   \\\n\
-                    la a0, val1_addr; \\\n\
-                    fl%s f0, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                    la a0, val2_addr; \\\n\
-                    fl%s f%d, %d(a0);"%(('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4)) + " \\\n\
-                    vfmv.s.f v8, f0; \\\n\
-                    fl%s f2, %d(a0); "%(('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8)) + "\\\n\
-                    inst v24, v8, f%d%s; "%(n,n, ", v0.t" if masked else "") + " \\\n\
-                )", file=f)
-        for n in range(1,32):
-            if n == 1 or n % lmul != 0:
-                continue
-            print("#define TEST_FPRED_VF_OP_rd_%d( testnum, inst, val1_addr, val2_addr ) "%n + "\\\n\
-            TEST_CASE_LOOP_FP( testnum, v%d,    \\\n\
-                la a0, val1_addr; \\\n\
-                fl%s f0, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                la a0, val2_addr; \\\n\
-                fl%s f1, %d(a0); "%(('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4)) + "\\\n\
-                vfmv.s.f v8, f0; \\\n\
-                fl%s f2, %d(a0); "%(('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8)) + "\\\n\
-                inst v%d, v8, f1%s; "%(n, ", v0.t" if masked else "") +" \\\n\
-            )", file=f)
+
 
 def generate_macros_widen(f, lmul):
     vlen = int(os.environ['RVV_ATG_VLEN'])
@@ -1111,7 +1075,7 @@ def generate_tests_vfwmacc(instr, f, vsew, lmul, rs1_val, rs2_val):
     vf_test_num = n - vv_test_num
     return (vv_test_num, vf_test_num, 0)
 
-def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", test_vv=True, test_vf=True, test_rv=False):
+def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", test_vv=True):
     # lmul = 1 if lmul < 1 else int(lmul)
     # TODO
     fdat_rs1 = "fdat_rs1"
@@ -1123,89 +1087,34 @@ def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", te
         rs2_val = rs2_val_64
     '''
 
-    if instr == "vfdiv" or instr == "vfrdiv" or instr == "vfrec7":
-        # For the divison instruction, the operands cannot be zero
-        # So we need to delete it
-        while (rs1_val.count("0x00000000")):
-            rs1_val.remove("0x00000000")
-        while (rs2_val.count("0x00000000")):
-            rs2_val.remove("0x00000000")
-
-        # `0x80000000` is represented as `-0` in floating point
-        # So we need to delete it
-        while (rs1_val.count("0x80000000")):
-            rs1_val.remove("0x80000000")
-        while (rs2_val.count("0x80000000")):
-            rs2_val.remove("0x80000000")
-
-        # For the divison instruction, the operands cannot be zero
-        # So we need to delete it
-        while (rs1_val.count("0x0000000000000000")):
-            rs1_val.remove("0x0000000000000000")
-        while (rs2_val.count("0x0000000000000000")):
-            rs2_val.remove("0x0000000000000000")
-
-        # `0x8000000000000000` is represented as `-0` in floating point
-        # So we need to delete it
-        while (rs1_val.count("0x8000000000000000")):
-            rs1_val.remove("0x8000000000000000")
-        while (rs2_val.count("0x8000000000000000")):
-            rs2_val.remove("0x8000000000000000")
-
-    n = 1
+    loop_num = min(len(rs1_val), len(rs2_val))
+    
+    n = 0
     if test_vv:
         print("  #-------------------------------------------------------------", file=f)
         print("  # VV Tests", file=f)
         print("  #-------------------------------------------------------------", file=f)
 
-        for i in range(len(rs1_val) - 1):
-            print("TEST_FPRED_VV_OP( %d,  %s.%s,                        %s,        %s );" % (
-                n, instr, suffix, fdat_rs1, fdat_rs2), file=f)
+        for i in range(loop_num):
             n += 1
+            print("TEST_FPRED_VV_OP( %d,  %s.%s,  %s,  %s );" % (
+                n, instr, suffix, fdat_rs1, fdat_rs2), file=f)
 
         print("  #-------------------------------------------------------------", file=f)
         print("  # VV Tests (different register)", file=f)
         print("  #-------------------------------------------------------------", file=f)
 
 
-        for i in range(len(rs1_val) - 1):
+        for i in range(min(32, loop_num)):
             k = i % 31 + 1
             if k == 8 or k == 16 or k == 24 or k % lmul != 0 or k == 12 or k == 20 or k == 24:
                 continue
+            n += 1
             print("  TEST_FPRED_VV_OP_rd%d( " % k+str(n)+",  %s.%s,  " %
                   (instr, suffix)+fdat_rs1+", "+fdat_rs2+" );", file=f)
             n += 1
             print("  TEST_FPRED_VV_OP_1%d( " % k+str(n)+",  %s.%s,  " %
                   (instr, suffix)+fdat_rs1+", "+fdat_rs2+" );", file=f)
-            n += 1
-
-    if test_vf:
-        print("  #-------------------------------------------------------------", file=f)
-        print("  # VF Tests", file=f)
-        print("  #-------------------------------------------------------------", file=f)
-        
-        for i in range(len(rs1_val) - 1):
-            print("TEST_FPRED_VF_OP( %d,  %s.vf,      %s,        %s );" % (
-                n, instr, fdat_rs1, fdat_rs2), file=f)
-            n += 1
-
-        print("  #-------------------------------------------------------------",file=f)
-        print("  # VF Tests (different register)",file=f)
-        print("  #-------------------------------------------------------------",file=f)
-        
-        n = n+1
-        for i in range(len(rs1_val) - 1):     
-            k = i%31+1        
-            if k == 1 or k == 8 or k == 16 or k == 24 or k % lmul != 0 or k == 12 or k == 20 or k == 24:
-                continue  
-            print("  TEST_FPRED_VF_OP_rd_%d( "%k+str(n)+",  %s.vf,  "%instr+fdat_rs1+", "+fdat_rs2+" );",file=f)
-            n+=1
-            
-            k = i%31+1
-            if k == 2 or k % lmul != 0 or k == 12 or k == 20 or k == 24:
-                continue        
-            print("  TEST_FPRED_VF_OP_rs1_%d( "%k+str(n)+",  %s.vf, "%instr+fdat_rs1+", "+fdat_rs2+" );",file=f)
-            n +=1
 
     return n
 

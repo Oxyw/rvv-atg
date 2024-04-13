@@ -1381,7 +1381,9 @@ def generate_tests_vred(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vv', gen
     n = 0
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
-    vlmax = int((vlen * lmul / vsew))
+    num_elem = int(vlen * lmul / vsew)
+    loop_num = min(len(rs1_val), len(rs2_val))
+    vlmax = num_elem
     mask_bytes = 32 # math.ceil(vlmax / 8)
     mask_num = vlmax * 2 + 4
     j = 0
@@ -1390,12 +1392,12 @@ def generate_tests_vred(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vv', gen
         print("  # VV Tests", file=f)
         print("  #-------------------------------------------------------------", file=f)
 
-        for i in range(len(rs1_val)):
+        for i in range(loop_num):
             n += 1
             print("  TEST_VV_OP( "+str(n)+",  %s.%s, " %
                 (instr, instr_suffix)+rs2_val[i]+", "+rs1_val[i]+", mask_data+%d"%(j*mask_bytes)+" );", file=f)
             j = (j + 1) % mask_num
-        for i in range(100):     
+        for i in range(min(32, loop_num)):     
             k = i%31+1
             if k % lmul != 0 or k == 24 or k == 12 or k == 20 or k == 24:
                 continue
@@ -1413,20 +1415,21 @@ def generate_tests_vred(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vv', gen
     return n
     
 def generate_tests_vwred(f, rs1_val, rs2_val, instr, lmul, instr_suffix='vv'):
-    n = 1
+    n = 0
     if lmul < 1:
         lmul = 1
     else:
         lmul = int(lmul)
+    loop_num = min(len(rs1_val), len(rs2_val))
     print("  #-------------------------------------------------------------", file=f)
     print("  # VV Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
-    for i in range(len(rs1_val)):
+    for i in range(loop_num):
         n += 1
         print("  TEST_W_VV_OP_WITH_INIT( "+str(n)+",  %s.%s, " %
               (instr, instr_suffix)+rs2_val[i]+", "+rs1_val[i]+" );", file=f)
-    for i in range(100):     
+    for i in range(min(32, loop_num)):     
         k = i%31+1
         if k%(2*lmul)==0 and k != 8 and k != 16 and k != 24  and k != 12 and k != 20 and k != 24:
             n+=1
