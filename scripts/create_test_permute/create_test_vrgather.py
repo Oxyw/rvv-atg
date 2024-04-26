@@ -110,13 +110,13 @@ def generate_tests(f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = T
     n = 0
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
-    num_elem = int((vlen * lmul / vsew))
+    num_elem = int(vlen * lmul / vsew)
     if num_elem == 0:
         return 0
     loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
     step_bytes = int(vlen * lmul / 8)
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     if generate_vv:

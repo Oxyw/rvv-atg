@@ -96,7 +96,7 @@ def generate_tests_vfirst(f, vlen, vsew, lmul):
         vemul = 1
     
     vlmax = int(vlen * lmul / vsew) # TODO
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     #########################vfirst####################################################################################################

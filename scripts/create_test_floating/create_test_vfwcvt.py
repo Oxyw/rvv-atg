@@ -66,7 +66,7 @@ def generate_tests_vfwcvt(instr, f, lmul, rs1_val, rs2_val):
     lmul_1 = 1 if lmul < 1 else int(lmul)
     n = 0
     
-    num_elem = int((vlen * lmul / vsew))
+    num_elem = int(vlen * lmul / vsew)
     if num_elem == 0:
         return 0
     loop_num = min(int(min(len(rs1_val), len(rs2_val)) / num_elem), 20)
@@ -74,7 +74,7 @@ def generate_tests_vfwcvt(instr, f, lmul, rs1_val, rs2_val):
     step_bytes_double = step_bytes * 2
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     

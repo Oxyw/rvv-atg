@@ -1,4 +1,5 @@
 import os
+import math
 from scripts.test_common_info import print_rvmodel_data, gen_arr_compute
 
 '''
@@ -788,7 +789,7 @@ def generate_tests(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vv", test_vv=
     step_bytes = int(vlen * lmul / 8)
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     
@@ -906,7 +907,7 @@ def generate_tests_v_op(instr, f, lmul, rs1_val, rs2_val):
     step_bytes = int(vlen * lmul / 8)
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     
@@ -962,7 +963,7 @@ def generate_tests_vfmacc(instr, f, vsew, lmul, rs1_val, rs2_val):
     step_bytes = int(vlen * lmul / 8)
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
  
@@ -1029,7 +1030,7 @@ def generate_tests_vfwmacc(instr, f, vsew, lmul, rs1_val, rs2_val):
     step_bytes_double = step_bytes * 2
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
  
@@ -1139,7 +1140,7 @@ def generate_tests_widen(instr, f, vsew, lmul, rs1_val, rs2_val, test_wvwf = Fal
     step_bytes_double = step_bytes * 2
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
 
@@ -1223,7 +1224,7 @@ def generate_tests_vvmvfm(instr, f, lmul, rs1_val, rs2_val, test_vv=True):
     step_bytes = int(vlen * lmul / 8)
     
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     # Generate vv

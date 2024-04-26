@@ -448,7 +448,7 @@ def print_mask_data_ending_fixed(f):
         print(".word\t%s"%mask_data_ending[i], file=f)
         
 def print_mask_data_ending(f, num_elem):
-    print("\n.align 8", file=f)
+    print("\n.align 4", file=f)
     print("mask_data:", file=f)
     num_bytes = math.ceil(num_elem / 8) # vlm to load mask: ceil(vl/8) bytes
     num_words = math.ceil(num_bytes / 4)
@@ -461,22 +461,22 @@ def print_mask_data_ending(f, num_elem):
         for j in range(num_words):
             t1 = walking_one % (1 << 32)
             walking_one = walking_one // (1 << 32)
-            print(".word\t%s"%'{:#016x}'.format(t1), file=f)
+            print(".word\t%s"%'{:#08x}'.format(t1), file=f)
         for j in range(num_words):
             t0 = walking_zero % (1 << 32)
             walking_zero = walking_zero // (1 << 32)
-            print(".word\t%s"%'{:#016x}'.format(t0), file=f)
+            print(".word\t%s"%'{:#08x}'.format(t0), file=f)
     #all_zero
     for i in range(num_words):
-        print(".word\t%s"%'{:#016x}'.format(0x0), file=f)
+        print(".word\t%s"%'{:#08x}'.format(0x0), file=f)
     #all_one
     for i in range(num_words):
-        print(".word\t%s"%'{:#016x}'.format(0xffffffff), file=f)
+        print(".word\t%s"%'{:#08x}'.format(0xffffffff), file=f)
     # checkerboard
     for i in range(num_words):
-        print(".word\t%s"%'{:#016x}'.format(0x55555555), file=f)
+        print(".word\t%s"%'{:#08x}'.format(0x55555555), file=f)
     for i in range(num_words):
-        print(".word\t%s"%'{:#016x}'.format(0xaaaaaaaa), file=f)
+        print(".word\t%s"%'{:#08x}'.format(0xaaaaaaaa), file=f)
     
   
 def print_origin_data_ending(f):

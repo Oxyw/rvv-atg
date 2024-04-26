@@ -132,7 +132,7 @@ def generate_tests_vslide(f, vsew, lmul):
     if num_group_walking == 0:
         return 0
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     print("  #-------------------------------------------------------------", file=f)

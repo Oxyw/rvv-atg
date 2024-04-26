@@ -167,7 +167,7 @@ def generate_tests(f, rs1_val, rs2_val, instr, lmul, generate_vi = False):
     loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
     step_bytes = int(vlen * lmul / 8)
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     print("  #-------------------------------------------------------------", file=f)
@@ -234,7 +234,7 @@ def generate_tests_vnclip(f, rs1_val, rs2_val, instr, lmul):
     loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
     step_bytes = int(vlen * lmul / 8)
     vlmax = num_elem
-    mask_bytes = 32 # math.ceil(vlmax / 8)
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
     mask_num = vlmax * 2 + 4
     j = 0
     print("  #-------------------------------------------------------------", file=f)
