@@ -47,7 +47,7 @@ def create_first_test_vfredosum(xlen, vlen, vsew, lmul, vta, vma, output_dir, rp
     n = generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vs", test_vv = True)
 
     # Common const information
-    print_ending(f, generate_data = True, rs1_val = rs1_val, rs2_val = rs2_val, test_tuples=(0,n,0))
+    print_ending(f, generate_data = True, rs1_val = rs1_val, rs2_val = rs2_val, print_mask = True, num_elem = int(vlen * lmul / vsew), test_tuples=(0,n,0))
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

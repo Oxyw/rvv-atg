@@ -1,6 +1,6 @@
 import os
 import math
-from scripts.test_common_info import print_rvmodel_data, gen_arr_compute
+from scripts.test_common_info import print_rvmodel_data, gen_arr_compute, print_mask_data_ending
 
 '''
 rs1_val = ["0x00000000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0xBF800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0x3F800000", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0xFF7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x7F7FFFFF", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x80855555", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x00800001", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x80800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000", "0x00800000",
@@ -421,15 +421,15 @@ def generate_macros_vfwmacc(f, vsew, lmul):
 
 def generate_macros_vfred(f, vsew, lmul, test_vv=True):
     masked = True if os.environ['RVV_ATG_MASKED'] == "True" else False
-    print("#define TEST_FPRED_VV_OP( testnum, inst, val1_addr, val2_addr ) \\\n\
+    print("#define TEST_FPRED_VV_OP( testnum, inst, val1_addr, val2_addr, mask_addr ) \\\n\
         TEST_CASE_LOOP_FP( testnum, v24,    \\\n\
             la a0, val1_addr; \\\n\
             fl%s f0, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
             la a0, val2_addr; \\\n\
-            fl%s f1, %d(a0); "%(('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4)) + "\\\n\
+            fl%s f1, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
             vfmv.s.f v8, f0; \\\n\
             vfmv.s.f v16, f1; \\\n\
-            fl%s f2, %d(a0); "%(('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8)) + "\\\n\
+            %s"%("la a0, mask_addr; \\\n                vlm.v v0, (a0); \\\n"if masked else "")+" \
             inst v24, v8, v16%s;"%(", v0.t" if masked else "") + " \\\n\
         )", file=f)
     # lmul = 1 if lmul < 1 else int(lmul)
@@ -438,32 +438,32 @@ def generate_macros_vfred(f, vsew, lmul, test_vv=True):
             if n % lmul != 0:
                 continue
             rs2, rd = valid_aligned_regs(n)
-            print("#define TEST_FPRED_VV_OP_1%d( testnum, inst, val1_addr, val2_addr ) \\\n\
+            print("#define TEST_FPRED_VV_OP_1%d( testnum, inst, val1_addr, val2_addr, mask_addr ) \\\n\
             TEST_CASE_LOOP_FP( testnum, v%d,      \\\n\
                 la a0, val1_addr; \\\n\
                 fl%s f0, 0(a0); \\\n\
                 la a0, val2_addr; \\\n\
-                fl%s f1, %d(a0); \\\n\
+                fl%s f1, 0(a0); \\\n\
                 vfmv.s.f v%d, f0; \\\n\
                 vfmv.s.f v%d, f1; \\\n\
-                fl%s f2, %d(a0); \\\n\
+                %s\
                 inst v%d, v%d, v%d%s; \\\n\
-            )" % (n, rd, ('d' if vsew == 64 else 'w'), ('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4), rs2,  n, ('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8), rd, rs2, n, ", v0.t" if masked else ""), file=f)
+            )" % (n, rd, ('d' if vsew == 64 else 'w'), ('d' if vsew == 64 else 'w'), rs2, n, ("la a0, mask_addr; \\\n                vlm.v v0, (a0); \\\n"if masked else ""), rd, rs2, n, ", v0.t" if masked else ""), file=f)
         for n in range(1, 32):
             if n % lmul != 0:
                 continue
             rs1, rs2 = valid_aligned_regs(n)
-            print("#define TEST_FPRED_VV_OP_rd%d( testnum, inst, val1_addr, val2_addr ) \\\n\
+            print("#define TEST_FPRED_VV_OP_rd%d( testnum, inst, val1_addr, val2_addr, mask_addr ) \\\n\
             TEST_CASE_LOOP_FP( testnum, v%d,    \\\n\
                 la a0, val1_addr; \\\n\
                 fl%s f0, 0(a0); \\\n\
                 la a0, val2_addr; \\\n\
-                fl%s f1, %d(a0); \\\n\
+                fl%s f1, 0(a0); \\\n\
                 vfmv.s.f v%d, f0; \\\n\
                 vfmv.s.f v%d, f1; \\\n\
-                fl%s f2, %d(a0); \\\n\
+                %s\
                 inst v%d, v%d, v%d%s; \\\n\
-            )" % (n,  n, ('d' if vsew == 64 else 'w'), ('d' if vsew == 64 else 'w'), (8 if vsew == 64 else 4), rs2, rs1, ('d' if vsew == 64 else 'w'), (16 if vsew == 64 else 8), n, rs2, rs1, ", v0.t" if masked else ""), file=f)
+            )" % (n,  n, ('d' if vsew == 64 else 'w'), ('d' if vsew == 64 else 'w'), rs2, rs1, ("la a0, mask_addr; \\\n                vlm.v v0, (a0); \\\n"if masked else ""), n, rs2, rs1, ", v0.t" if masked else ""), file=f)
 
 
 def generate_macros_widen(f, lmul):
@@ -1078,9 +1078,6 @@ def generate_tests_vfwmacc(instr, f, vsew, lmul, rs1_val, rs2_val):
 
 def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", test_vv=True):
     # lmul = 1 if lmul < 1 else int(lmul)
-    # TODO
-    fdat_rs1 = "fdat_rs1"
-    fdat_rs2 = "fdat_rs2"
     '''
     global rs1_val, rs2_val, rs1_val_64, rs2_val_64
     if vsew == 64:
@@ -1090,6 +1087,14 @@ def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", te
 
     loop_num = min(len(rs1_val), len(rs2_val))
     
+    vlen = int(os.environ['RVV_ATG_VLEN'])
+    num_elem = int(vlen * lmul / vsew)
+    step_bytes = int(vlen * lmul / 8)
+    vlmax = num_elem
+    mask_bytes = 4 * math.ceil(vlmax / 32) # 4 * num_words
+    mask_num = vlmax * 2 + 4
+    j = 0
+    
     n = 0
     if test_vv:
         print("  #-------------------------------------------------------------", file=f)
@@ -1098,8 +1103,9 @@ def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", te
 
         for i in range(loop_num):
             n += 1
-            print("TEST_FPRED_VV_OP( %d,  %s.%s,  %s,  %s );" % (
-                n, instr, suffix, fdat_rs1, fdat_rs2), file=f)
+            print("TEST_FPRED_VV_OP( %d,  %s.%s,  fdat_rs1+%d,  fdat_rs2+%d,  mask_data+%d );" % (
+                n, instr, suffix, i*step_bytes, i*step_bytes, j*mask_bytes), file=f)
+            j = (j + 1) % mask_num
 
         print("  #-------------------------------------------------------------", file=f)
         print("  # VV Tests (different register)", file=f)
@@ -1110,12 +1116,16 @@ def generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vf", te
             k = i % 31 + 1
             if k == 8 or k == 16 or k == 24 or k % lmul != 0 or k == 12 or k == 20 or k == 24:
                 continue
+            
             n += 1
-            print("  TEST_FPRED_VV_OP_rd%d( " % k+str(n)+",  %s.%s,  " %
-                  (instr, suffix)+fdat_rs1+", "+fdat_rs2+" );", file=f)
+            print("  TEST_FPRED_VV_OP_rd%d( %d,  %s.%s,  fdat_rs1+%d,  fdat_rs2+%d,  mask_data+%d );" % (
+                k, n, instr, suffix, i*step_bytes, i*step_bytes, j*mask_bytes), file=f)
+            j = (j + 1) % mask_num
+            
             n += 1
-            print("  TEST_FPRED_VV_OP_1%d( " % k+str(n)+",  %s.%s,  " %
-                  (instr, suffix)+fdat_rs1+", "+fdat_rs2+" );", file=f)
+            print("  TEST_FPRED_VV_OP_1%d( %d,  %s.%s,  fdat_rs1+%d,  fdat_rs2+%d,  mask_data+%d );" % (
+                k, n, instr, suffix, i*step_bytes, i*step_bytes, j*mask_bytes), file=f)
+            j = (j + 1) % mask_num
 
     return n
 
@@ -1284,7 +1294,7 @@ def generate_tests_vvmvfm(instr, f, lmul, rs1_val, rs2_val, test_vv=True):
     return (vv_test_num, vx_test_num, 0)
 
 
-def print_ending(f, generate_data = False, rs1_val = None, rs2_val = None, test_tuples = (0,0,0)):
+def print_ending(f, generate_data = False, rs1_val = None, rs2_val = None, print_mask = False, num_elem = 0, test_tuples = (0,0,0)):
     print("#endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -1299,6 +1309,9 @@ def print_ending(f, generate_data = False, rs1_val = None, rs2_val = None, test_
 
     if generate_data:
         generate_fdat_seg(f, rs1_val, rs2_val)
+    
+    if print_mask:
+        print_mask_data_ending(f, num_elem)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)
