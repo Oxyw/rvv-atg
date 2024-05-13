@@ -52,26 +52,6 @@ test_ ## testnum: \
     RVTEST_SIGUPD(x20, testreg);
 
 
-#define TEST_CASE_LOAD( testnum, testreg, eew, correctval1, correctval2, code... ) \
-test_ ## testnum: \
-    code; \
-    li x7, MASK_EEW(correctval1, eew); \
-    li TESTNUM, testnum; \
-    vsetivli x31, 1, MK_EEW(eew), tu, mu; \
-    VMVXS_AND_MASK_EEW( x14, testreg, eew ) \
-    VSET_VSEW \
-    VECTOR_RVTEST_SIGUPD(x20, testreg); \
-    vsetivli x31, 4, MK_EEW(eew), tu, mu; \
-    vslidedown.vi v16, testreg, 1; \
-    VSET_VSEW \
-    li x7, MASK_EEW(correctval2, eew); \
-    li TESTNUM, testnum; \
-    vsetivli x31, 1, MK_EEW(eew), tu, mu; \
-    VMVXS_AND_MASK_EEW( x14, v16, eew ) \
-    VSET_VSEW \
-    VECTOR_RVTEST_SIGUPD(x24, testreg);
-
-
 // For simplicity, all vlre/vsre test use 2 fields
 #define TEST_CASE_VLRE( testnum, eew, correctval1, correctval2, code... ) \
 test_ ## testnum: \

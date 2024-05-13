@@ -383,67 +383,36 @@ def generate_macros_vlsseg(f, lmul, vsew, eew):
 
 def generate_macros_vlxei(f, vsew, lmul):
     lmul = 1 if lmul < 1 else int(lmul)
-    for n in range(2, 30):
-        if n == 30 or n == 12 or n == 20 or n == 24 or n == 30 or n == 31:
+    for n in range(2, 32):
+        if n == 12 or n == 20 or n == 24:
             continue
+        rs_index = 31 if n == 30 else 30
+        rs_vl = 29 if n == 30 or n == 31 else 31
         print("#define TEST_VLXEI_OP_1%d( testnum, inst, index_eew, result1, result2, base_data, base_index )"%n + " \\\n\
-            TEST_CASE_LOAD( testnum, v16, __riscv_vsew, result1, result2, \\\n\
+            TEST_CASE_LOOP( testnum, v16,   \\\n\
                 la  x%d, base_data; "%n + "\\\n\
-                la  x30, base_index; \\\n\
-                vsetvli x31, x0, MK_EEW(index_eew), tu, mu; \\\n\
-                MK_VLE_INST(index_eew) v8, (x30); \\\n\
+                la  x%d, base_index; "%(rs_index) + "\\\n\
+                vsetvli x%d, x0, MK_EEW(index_eew), tu, mu; "%(rs_vl) + "\\\n\
+                MK_VLE_INST(index_eew) v8, (x%d); "%(rs_index) + "\\\n\
                 VSET_VSEW_4AVL \\\n\
                 inst v16, (x%d), v8; "%n + "\\\n\
         )", file=f)
+    
     for n in range(1, 32):
-        if n == 8 or n == 16 or n == 12 or n == 20 or n == 24:
+        if n == 12 or n == 20 or n == 24:
             continue
         # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
+        vs = 16 if n == 8 else 8
         print("#define TEST_VLXEI_OP_rd%d( testnum, inst, index_eew, result1, result2, base_data, base_index )"%n + " \\\n\
-            TEST_CASE_LOAD( testnum, v%d, __riscv_vsew, result1, result2, "%n + "\\\n\
+            TEST_CASE_LOOP( testnum, v%d, "%n + "\\\n\
                 la  x1, base_data; \\\n\
                 la  x6, base_index; \\\n\
                 vsetvli x31, x0, MK_EEW(index_eew), tu, mu; \\\n\
-                MK_VLE_INST(index_eew) v8, (x6); \\\n\
+                MK_VLE_INST(index_eew) v%d, (x6); \\\n\
                 VSET_VSEW_4AVL \\\n\
-                inst v%d, (x1), v8; "%n + "\\\n\
+                inst v%d, (x1), v%d; "%(vs, n, vs) + "\\\n\
         ) ", file=f)
-    print("#define TEST_VLXEI_OP_rd8( testnum, inst, index_eew, result1, result2, base_data, base_index ) \\\n\
-            TEST_CASE_LOAD( testnum, v8, __riscv_vsew, result1, result2, \\\n\
-                la  x1, base_data; \\\n\
-                la  x2, base_index; \\\n\
-                vsetvli x31, x0, MK_EEW(index_eew), tu, mu; \\\n\
-                MK_VLE_INST(index_eew) v16, (x2); \\\n\
-                VSET_VSEW_4AVL \\\n\
-                inst v8, (x1), v16; \\\n\
-        ) ", file=f)
-    print("#define TEST_VLXEI_OP_rd16( testnum, inst, index_eew, result1, result2, base_data, base_index ) \\\n\
-            TEST_CASE_LOAD( testnum, v16, __riscv_vsew, result1, result2, \\\n\
-                la  x1, base_data; \\\n\
-                la  x2, base_index; \\\n\
-                vsetvli x31, x0, MK_EEW(index_eew), tu, mu; \\\n\
-                MK_VLE_INST(index_eew) v8, (x2); \\\n\
-                VSET_VSEW_4AVL \\\n\
-                inst v16, (x1), v8; \\\n\
-        ) ", file=f)
-    print("#define TEST_VLXEI_OP_130( testnum, inst, index_eew, result1, result2, base_data, base_index )" + " \\\n\
-        TEST_CASE_LOAD( testnum, v16, __riscv_vsew, result1, result2, \\\n\
-            la  x30, base_data; " + "\\\n\
-            la  x31, base_index; \\\n\
-            vsetvli x29, x0, MK_EEW(index_eew), tu, mu; \\\n\
-            MK_VLE_INST(index_eew) v8, (x31); \\\n\
-            VSET_VSEW_4AVL \\\n\
-            inst v16, (x30), v8; " + "\\\n\
-    )", file=f)
-    print("#define TEST_VLXEI_OP_131( testnum, inst, index_eew, result1, result2, base_data, base_index )" + " \\\n\
-        TEST_CASE_LOAD( testnum, v16, __riscv_vsew, result1, result2, \\\n\
-            la  x31, base_data; " + "\\\n\
-            la  x30, base_index; \\\n\
-            vsetvli x29, x0, MK_EEW(index_eew), tu, mu; \\\n\
-            MK_VLE_INST(index_eew) v8, (x30); \\\n\
-            VSET_VSEW_4AVL \\\n\
-            inst v16, (x31), v8; " + "\\\n\
-    )", file=f)
+
 
 def generate_macros_vlxeiseg(f, lmul, vsew, eew):
     emul = eew / vsew * lmul
