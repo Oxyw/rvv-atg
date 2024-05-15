@@ -10,15 +10,6 @@
 //-----------------------------------------------------------------------
 
 // VSEW temporarily hard-coded to 16 bits
-#define TESTNUM gp
-#define RVTEST_VECTOR_ENABLE                                            \
-  li a0, (MSTATUS_VS & (MSTATUS_VS >> 1)) |                             \
-         (MSTATUS_FS & (MSTATUS_FS >> 1));                              \
-  csrs mstatus, a0;                                                     \
-  csrwi fcsr, 0;                                                        \
-  csrwi vcsr, 0;
-#define VECTOR_RVTEST_SIGUPD(basereg, vreg) vmv.x.s x1, vreg; RVTEST_SIGUPD(basereg, x1);
-#define VECTOR_RVTEST_SIGUPD_F(basereg, vreg, flagreg) vfmv.f.s f1, vreg; RVTEST_SIGUPD_F(basereg, f1, flagreg);
 
 #define RVTEST_VSET RVTEST_VECTOR_ENABLE; vsetvli x31, x0, e16, tu, mu;
 #define __riscv_vsew 16

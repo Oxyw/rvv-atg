@@ -1,3 +1,3 @@
-GCC_CONST = 'riscv64-rivai-elf-gcc'
+GCC_CONST = 'riscv64-unknown-elf-gcc'
 
-OBJDUMP_CONST = 'riscv64-rivai-elf-objdump'
+OBJDUMP_CONST = 'riscv64-unknown-elf-objdump'
