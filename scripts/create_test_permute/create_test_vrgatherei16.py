@@ -165,7 +165,7 @@ def generate_tests(f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = T
             print("  TEST_VI_OP( "+str(n)+",  %s.vi, " %
                 instr+"rs2_data+%d, 15, mask_data+%d)"%( i*step_bytes, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
-    vi_test_num = n - vx_test_num
+    vi_test_num = n - vv_test_num - vx_test_num
 
     return (vv_test_num, vx_test_num, vi_test_num)
 

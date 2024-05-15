@@ -874,7 +874,7 @@ def generate_tests_vvvxvi(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vv', g
             print("  TEST_VI_OP( "+str(n)+",  %s.vi, " %
                 instr+"rs2_data+%d, 15, mask_data+%d)"%(i*step_bytes, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
-    vi_test_num = n - vx_test_num
+    vi_test_num = n - vv_test_num - vx_test_num
 
     return (vv_test_num, vx_test_num, vi_test_num)
 
@@ -1160,7 +1160,7 @@ def generate_tests_vmadc(instr, f, rs1_val, rs2_val, lmul, generate_vi = True):
                 instr+" rs2_data+%d, 14, mask_data+%d)"%(i*step_bytes, j*mask_bytes), file=f)     
             j = (j + 1) % mask_num
 
-    vi_test_num = n - vx_test_num
+    vi_test_num = n - vv_test_num - vx_test_num
 
     return (vv_test_num, vx_test_num, vi_test_num)
 
@@ -1225,7 +1225,7 @@ def generate_tests_vvvxvim(instr, f, rs1_val, rs2_val, lmul, generate_vi=True):
             print("  TEST_VI_M_OP( "+str(n)+",  %s.vim, " %
                 instr+"rs2_data+%d, 14, mask_data+%d)"%(i*step_bytes, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
-    vi_test_num = n - vx_test_num
+    vi_test_num = n - vv_test_num - vx_test_num
 
     return (vv_test_num, vx_test_num, vi_test_num)
 
@@ -1306,7 +1306,7 @@ def generate_tests_vvmvxmvim(instr, f, rs1_val, rs2_val, lmul, generate_vv=True,
                 instr+" rs2_data+%d, 4, mask_data+%d)"%(i*step_bytes, j*mask_bytes), file=f)
             j = (j + 1) % mask_num
     
-    vi_test_num = n - vx_test_num
+    vi_test_num = n - vv_test_num - vx_test_num
     return (vv_test_num, vx_test_num, vi_test_num)
 
 def print_common_ending_rs1rs2rd(rs1_val, rs2_val, f):
@@ -1372,7 +1372,7 @@ def generate_tests_nvvnvxnvi(instr, f, rs1_val, rs2_val, lmul):
               instr+" rs2_data+%d, 4, mask_data+%d)"%( i*step_bytes*2, j*mask_bytes), file=f)
         j = (j + 1) % mask_num
 
-    vi_test_num = n - vx_test_num
+    vi_test_num = n - vv_test_num - vx_test_num
     return (vv_test_num, vx_test_num, vi_test_num)
 
 def generate_tests_vred(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vv', generate_vi = True, generate_vx = True, generate_vv = True):
