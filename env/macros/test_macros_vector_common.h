@@ -9,6 +9,35 @@
 #define VECTOR_RVTEST_SIGUPD_F(basereg, vreg, flagreg) vfmv.f.s f1, vreg; RVTEST_SIGUPD_F(basereg, f1, flagreg);
 
 
+// FCSR: fflags, frm, fcsr
+#define FCSR_SIGUPD(basereg) \
+    csrr x1, fflags; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, frm; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, fcsr; \
+    RVTEST_SIGUPD(basereg, x1);
+
+// VCSR: vstart, vxsat, vxrm, vcsr, vl, vtype, vlenb
+#define VCSR_SIGUPD(basereg) \
+    csrr x1, vstart; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, vxsat; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, vxrm; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, vcsr; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, vl; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, vtype; \
+    RVTEST_SIGUPD(basereg, x1); \
+    csrr x1, vlenb; \
+    RVTEST_SIGUPD(basereg, x1);
+
+// Save CSRs: xcsr to x12, fcsr to x24, vcsr to x24
+#define XFVCSR_SIGUPD FCSR_SIGUPD(x24); VCSR_SIGUPD(x24);
+
 // Compare only low VSEW-bits of v14 and correctval
 #define VMVXS_AND_MASK_VSEW( targetreg, testreg ) \
     vmv.x.s targetreg, testreg; \
@@ -28,12 +57,14 @@
 #define TEST_CASE( testnum, testreg, code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
 
 #define TEST_CASE_W( testnum, testreg, code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_DOUBLE_VSEW \
     VSET_VSEW \
@@ -42,6 +73,7 @@ test_ ## testnum: \
 #define TEST_CASE_MASK( testnum, testreg,  code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     vpopc.m x14, testreg; \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
@@ -49,6 +81,7 @@ test_ ## testnum: \
 #define TEST_CASE_MASK_4VL( testnum, testreg,  code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_VSEW_4AVL \
     vpopc.m x14, testreg; \
@@ -58,6 +91,7 @@ test_ ## testnum: \
 #define TEST_CASE_SCALAR_SETVSEW_AFTER( testnum, testreg,  code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_VSEW \
     RVTEST_SIGUPD(x20, testreg);
@@ -67,6 +101,7 @@ test_ ## testnum: \
 #define TEST_CASE_VLRE( testnum, eew, correctval1, correctval2, code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li x7, MASK_EEW(correctval1, eew); \
     li x8, MASK_EEW(correctval2, eew); \
     li TESTNUM, testnum; \
@@ -80,6 +115,7 @@ test_ ## testnum: \
 #define TEST_CASE_LOOP( testnum, testreg, code...) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     csrr x31, vstart; \
     csrr x30, vl; \
     li TESTNUM, testnum; \
@@ -93,6 +129,7 @@ test_ ## testnum: \
 #define TEST_CASE_LOOP_W( testnum, testreg, code...) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_DOUBLE_VSEW_4AVL \
     csrr x31, vstart; \
@@ -117,6 +154,7 @@ test_ ## testnum: \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
 
+// TODO:?
 // Then compare each element between `testreg` and v15, until `vl`
 // vl should be set before calling `TEST_CASE_LOOP_VSLIDEUP()`
 #define TEST_CASE_LOOP_VSLIDEUP( testnum, testreg, offset, code...) \
@@ -146,6 +184,7 @@ test_ ## testnum: \
   li  TESTNUM, testnum; \
   la  a0, test_ ## testnum ## _data ;\
   code; \
+  XFVCSR_SIGUPD \
   vfmv.f.s f3, testreg; \
   li a3, 1; \
   frflags a1; \
@@ -160,6 +199,7 @@ test_ ## testnum: \
 #define TEST_CASE_LOOP_FP( testnum, testreg,  code...) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     csrr x31, vstart; \
     csrr x30, vl; \
     li TESTNUM, testnum; \
@@ -174,6 +214,7 @@ test_ ## testnum: \
 #define TEST_CASE_LOOP_W_FP( testnum, testreg, code...) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_DOUBLE_VSEW_4AVL \
     csrr x31, vstart; \
@@ -197,6 +238,7 @@ test_ ## testnum: \
   li  TESTNUM, testnum; \
   la  a0, test_ ## testnum ## _data ;\
   code; \
+  XFVCSR_SIGUPD \
   VSET_DOUBLE_VSEW \
   vfmv.f.s f3, testreg; \
   VSET_VSEW \
@@ -218,6 +260,7 @@ test_ ## testnum: \
   li  TESTNUM, testnum; \
   la  a0, test_ ## testnum ## _data ;\
   code; \
+  XFVCSR_SIGUPD \
   VSET_DOUBLE_VSEW \
   vfmv.f.s f3, testreg; \
   VSET_VSEW \
@@ -236,6 +279,7 @@ test_ ## testnum: \
 #define TEST_CASE_MASK_FP_4VL( testnum, testreg,  code... ) \
 test_ ## testnum: \
     code; \
+    XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_VSEW_4AVL \
     vpopc.m x14, testreg; \
@@ -277,9 +321,6 @@ test_ ## testnum: \
     inst v16, (x1); \
     csrr x30, vl; \
   )
-
-
-
 
 
 #define TEST_VLRE2_OP( testnum, inst, eew, result1, result2, base ) \
@@ -327,6 +368,7 @@ test_ ## testnum: \
     store_inst v8, (x1), v24; \
     load_inst v16, (x1), v24; \
   )
+
 #define TEST_VSRE2_OP( testnum, load_inst, store_inst, eew, result1, result2, base ) \
   TEST_CASE_VLRE( testnum, eew, result1, result2,  \
     la  x1, base; \
@@ -455,32 +497,42 @@ test_ ## testnum: \
     inst v16, v0.t; \
   )
 
+#define TEST_CASE_X( testnum, testreg, code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li TESTNUM, testnum; \
+    RVTEST_SIGUPD(x20, testreg);
 
 #define TEST_VMV_OP( testnum, result ) \
+test_ ## testnum: \
     li TESTNUM, testnum; \
     li x7, MASK_VSEW(result); \
     li x8, 0; \
     vmv.s.x v14, x7; \
+    XFVCSR_SIGUPD \
     VMVXS_AND_MASK_VSEW( x8, v14 ) \
     RVTEST_SIGUPD(x20, x8);
 
 #define TEST_VFMVS_OP( testnum, base ) \
+test_ ## testnum: \
     li TESTNUM, testnum; \
     la a0, base; \
     flw f7, 0(a0); \
     vfmv.s.f v14, f7; \
     vfmv.f.s f8, v14; \
     fcvt.w.s x8, f8; \
-    fcvt.w.s x7, f7; \
+    XFVCSR_SIGUPD \
     RVTEST_SIGUPD(x20, x8);
 
 #define TEST_VFMVF_OP( testnum, base ) \
+test_ ## testnum: \
     li TESTNUM, testnum; \
     la a0, base; \
     flw f7, 0(a0); \
     vfmv.v.f v16, f7; \
     vfmv.f.s f8, v16; \
     fcvt.w.s x8, f8; \
-    fcvt.w.s x7, f7; \
+    XFVCSR_SIGUPD \
     RVTEST_SIGUPD(x20, x8);
 

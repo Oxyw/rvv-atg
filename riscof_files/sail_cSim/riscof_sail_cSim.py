@@ -41,8 +41,8 @@ class sail_cSim(pluginTemplate):
     def initialise(self, suite, work_dir, archtest_env):
         self.suite = suite
         self.work_dir = work_dir
-        self.objdump_cmd = 'riscv{1}-rivai-elf-objdump -D {0} > {2};'
-        self.compile_cmd = 'riscv{1}-rivai-elf-gcc -march={0}\
+        self.objdump_cmd = 'riscv{1}-unknown-elf-objdump -D {0} > {2};'
+        self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0}\
          -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles\
          -T '+archtest_env+'/../sail_cSim/env/link.ld\
          -I ' + archtest_env+'/../isa/macros/scalar\

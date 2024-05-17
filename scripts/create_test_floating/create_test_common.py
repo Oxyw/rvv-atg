@@ -65,7 +65,7 @@ def valid_aligned_regs(reg):
         return 24, 8
 
 
-def generate_macros(f, vsew, lmul, test_vv=True, test_vf=True, test_rv=False):
+def generate_macros(f, vsew, lmul, test_vv=True, test_vf=True):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul = 1 if lmul < 1 else int(lmul)
@@ -161,29 +161,6 @@ def generate_macros(f, vsew, lmul, test_vv=True, test_vf=True, test_rv=False):
                 fl%s f1, (x7);"%('d' if vsew == 64 else 'w') + " \\\n\
                 inst v%d, v8, f1%s; "%(n, ", v0.t" if masked else "") +" \\\n\
             )", file=f)
-    if test_rv:
-        for n in range(1,32):
-            if n ==14 or n % lmul != 0:
-                continue
-            print("#define TEST_FP_VF_OP_RV_rs1_%d( testnum, inst, val1, val2 )"%n + " \\\n\
-                TEST_CASE_FP( testnum, v24, val1, val2,   \\\n\
-                    fl%s f0, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                    fl%s f1, 4(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                    vfmv.s.f v%d, f0; "%n + "\\\n\
-                    fl%s f2, 8(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                    inst v24, f1, v%d; "%n + " \\\n\
-                )", file=f)
-        for n in range(1,32):
-            if n == 1 or n == 8 or n % lmul != 0:
-                continue
-            print("#define TEST_FP_VF_OP_RV_rd_%d( testnum, inst, val1, val2 ) "%n + "\\\n\
-                TEST_CASE_FP( testnum, v%d, val1, val2, "%n + "    \\\n\
-                    fl%s f0, 0(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                    fl%s f1, 4(a0); "%('d' if vsew == 64 else 'w') + "\\\n\
-                    vfmv.s.f v8, f0; \\\n\
-                    fl%s f2, 8(a0);"%('d' if vsew == 64 else 'w') + " \\\n\
-                    inst v%d, f1, v8; "%n +" \\\n\
-                )", file=f)
 
 def generate_macros_v_op(f, lmul):
     vlen = int(os.environ['RVV_ATG_VLEN'])

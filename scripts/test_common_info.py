@@ -141,7 +141,8 @@ def gen_arr_load(n, rd_data_multiplier = 1):
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul_1 = 1 if lmul < 1 else int(lmul)
-    arr = [0, ((vlen * lmul_1 * rd_data_multiplier / vsew) * vsew / 8) * (n), 0]
+    csr_num = 10  # 3 fcsr, 7 vcsr
+    arr = [0, (vlen * lmul_1 * rd_data_multiplier / vsew) * (n), csr_num * n]
     return arr
 
 def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
@@ -149,7 +150,9 @@ def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul_1 = 1 if lmul < 1 else int(lmul)
-    arr = [0, ((vlen * lmul_1 * rd_data_multiplier / vsew) * vsew / 8) * (test_num_tuple[0] + test_num_tuple[1] + test_num_tuple[2]) ,0]
+    test_num = test_num_tuple[0] + test_num_tuple[1] + test_num_tuple[2]
+    csr_num = 10  # 3 fcsr, 7 vcsr
+    arr = [0, (vlen * lmul_1 * rd_data_multiplier / vsew) * (test_num), csr_num * test_num]
     return arr
 
 

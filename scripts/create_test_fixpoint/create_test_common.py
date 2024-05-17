@@ -142,7 +142,7 @@ def generate_macros_vnclip(f, lmul):
         if n % (lmul * 2) == 0 and n != 24 and n != 8 and n != 16:
             # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
             print("#define TEST_AVG_N_VV_OP_rd%d(  testnum, inst, vxrm_val, val2, val1, mask_addr  ) "%n + " \\\n\
-                TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
+            TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
                 VSET_VSEW_4AVL \\\n\
                 la x7, rd_origin_data; \\\n\
                 vle%d.v v%d, (x7);"%(vsew, n) + " \\\n\

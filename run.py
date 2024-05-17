@@ -84,6 +84,9 @@ def run_vf(cwd, args, cgf, output_dir):
     first_test = create_first_test(
         args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir, rpt_empty)
 
+    # 4. Run spike to generate commit info log for first test
+    spike_first_log = run_spike(args.i, cwd,
+        output_dir, first_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
 
 
 def run_integer(cwd, args, cgf, output_dir):
@@ -99,10 +102,19 @@ def run_integer(cwd, args, cgf, output_dir):
     first_test = create_first_test(
         args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir, rpt_empty)
 
+    # 4. Run spike to generate commit info log for first test
+    spike_first_log = run_spike(args.i, cwd,
+        output_dir, first_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
+
+
 def run_mask(cwd, args, cgf, output_dir):
     # 1. Create empty test file
     empty_test = create_empty_test(
         args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir)
+
+    # 2. Run spike to generate commit info log
+    spike_first_log = run_spike(args.i, cwd,
+        output_dir, empty_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
 
 
 def run_loadstore(cwd, args, cgf, output_dir):
@@ -117,6 +129,10 @@ def run_loadstore(cwd, args, cgf, output_dir):
     # 3. Generate test with not-filled result
     first_test = create_first_test(
         args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir, rpt_empty)
+    
+    # 4. Run spike to generate commit info log for first test
+    spike_first_log = run_spike(args.i, cwd,
+        output_dir, first_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
 
 
 def run_loadstore_new(cwd, args, cgf, output_dir):

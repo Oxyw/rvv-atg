@@ -51,7 +51,7 @@ def generate_macros(f, lmul, vsew):
         if n == 24 or n == 16 or n == 8 or n % rs1lmul != 0 or n % lmul != 0 or (not (n + rs1lmul - 1 < 24 or n > 24 + lmul - 1)): # last condition is:(not( rs1 no overlap rd))
             continue
         print("#define TEST_VV_OP_1%d( testnum, inst, val2, val1, mask_addr )"%n + " \\\n\
-            TEST_CASE_LOOP( testnum, v24, \\\n\
+        TEST_CASE_LOOP( testnum, v24, \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v24, (x7);"%vsew + " \\\n\
