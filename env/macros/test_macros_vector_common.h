@@ -207,7 +207,7 @@ test_ ## testnum: \
     csrr x31, vstart; \
     csrr x30, vl; \
     li TESTNUM, testnum; \
-    frflags x11; \
+    frflags a1; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
     RVTEST_BASEUPD(x20) \
@@ -223,7 +223,7 @@ test_ ## testnum: \
     VSET_DOUBLE_VSEW_4AVL \
     csrr x31, vstart; \
     csrr x30, vl; \
-    frflags x11; \
+    frflags a1; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
     RVTEST_BASEUPD(x20) \
