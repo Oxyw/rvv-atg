@@ -26,7 +26,7 @@ def print_rvmodel_data(arr, f):
     #ifdef rvtest_mtrap_routine\n\
     \n\
     mtrap_sigptr:\n\
-        .fill 128,4,0xdeadbeef\n\
+        .fill 64*(XLEN/32),4,0xdeadbeef\n\
     \n\
     #endif\n\
     \n\
@@ -141,8 +141,8 @@ def gen_arr_load(n, rd_data_multiplier = 1):
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul_1 = 1 if lmul < 1 else int(lmul)
-    csr_num = 10  # 3 fcsr, 7 vcsr
-    arr = [0, (vlen * lmul_1 * rd_data_multiplier / vsew) * (n), csr_num * n]
+    fvcsr_num = 10  # 3 fcsr, 7 vcsr
+    arr = [n, (vlen * lmul_1 * rd_data_multiplier / vsew) * (n), fvcsr_num * n]
     return arr
 
 def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
@@ -151,8 +151,8 @@ def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
     vsew = int(os.environ['RVV_ATG_VSEW'])
     lmul_1 = 1 if lmul < 1 else int(lmul)
     test_num = test_num_tuple[0] + test_num_tuple[1] + test_num_tuple[2]
-    csr_num = 10  # 3 fcsr, 7 vcsr
-    arr = [0, (vlen * lmul_1 * rd_data_multiplier / vsew) * (test_num), csr_num * test_num]
+    fvcsr_num = 10  # 3 fcsr, 7 vcsr
+    arr = [test_num, (vlen * lmul_1 * rd_data_multiplier / vsew) * (test_num), fvcsr_num * test_num]
     return arr
 
 

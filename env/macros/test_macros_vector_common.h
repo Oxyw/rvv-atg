@@ -8,6 +8,10 @@
 #define VECTOR_RVTEST_SIGUPD(basereg, vreg) vmv.x.s x1, vreg; RVTEST_SIGUPD(basereg, x1);
 #define VECTOR_RVTEST_SIGUPD_F(basereg, vreg, flagreg) vfmv.f.s f1, vreg; RVTEST_SIGUPD_F(basereg, f1, flagreg);
 
+// XCSR: xstatus (now only run in M-mode)
+#define XCSR_SIGUPD(basereg) \
+    csrr x1, mstatus; \
+    RVTEST_SIGUPD(basereg, x1);
 
 // FCSR: fflags, frm, fcsr
 #define FCSR_SIGUPD(basereg) \
@@ -36,7 +40,7 @@
     RVTEST_SIGUPD(basereg, x1);
 
 // Save CSRs: xcsr to x12, fcsr to x24, vcsr to x24
-#define XFVCSR_SIGUPD FCSR_SIGUPD(x24); VCSR_SIGUPD(x24);
+#define XFVCSR_SIGUPD XCSR_SIGUPD(x12); FCSR_SIGUPD(x24); VCSR_SIGUPD(x24);
 
 // Compare only low VSEW-bits of v14 and correctval
 #define VMVXS_AND_MASK_VSEW( targetreg, testreg ) \
