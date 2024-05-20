@@ -36,7 +36,7 @@ def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
     if emul < 0.125 or emul > 8:
         return 0
     emul = 1 if emul < 1 else int(emul)
-    n = 1
+    n = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # VV Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
@@ -59,14 +59,14 @@ def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
               instr+" 32 "+", "+"0xff"+", "+"0x00"+" , "+"-4096 + tdat10"+" );", file=f)   
     for i in range(100):     
         k = i%31+1
-        n+=1
+        n += 1
         if( k % lmul == 0 and k % emul == 0 and k % lmul == 0 and k != 12 and k != 20 and k != 24):
             print("  TEST_VLE_OP_rd%d( "%k+str(n)+",  %s.v, "%instr+" 32 "+", "+"0xff00ff00"+", "+"0x0ff00ff0"+" , "+"4 + tdat"+");",file=f)
         
         k = i%30+2
         if(k == 31 or k == 12 or k == 20 or k == 24):
             continue;
-        n +=1
+        n += 1
         print("  TEST_VLE_OP_1%d( "%k+str(n)+",  %s.v, "%instr+" 32 "+", "+"0xf00ff00f"+", "+"0x00ff00ff"+" , "+"0 + tdat4"+");",file=f)
     return n
     

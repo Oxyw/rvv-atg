@@ -27,7 +27,7 @@ def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
         return 0
     emul = 1 if emul < 1 else int(emul)
     lmul = 1 if lmul < 1 else int(lmul)
-    n = 1
+    n = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # VV Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
@@ -70,13 +70,13 @@ def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
         for i in range(100):     
             k = i%30+1
             if k == 8 or k == 16 or k == 24: # (insn.rd() + nf * emul) <= NVPR
-                n+=1
+                n += 1
                 print("   TEST_VSSSEG1_OP_rd%d( "%k+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0"+",  "+"0 + tdat"+", rd_origin_data);",file=f)
         
             k = i%30+2
             if(k == 31 or k == 12 or k == 20 or k == 24  or k == 29 or k == 30):
                 continue;
-            n +=1
+            n += 1
             print("    TEST_VSSSEG1_OP_1%d( "%k+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"32"+",  "+"0 + tdat"+", rd_origin_data);",file=f)
     return n
 

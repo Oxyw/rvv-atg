@@ -13,7 +13,7 @@ def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
         return 0
     emul = 1 if emul < 1 else int(emul)
     lmul = 1 if lmul < 1 else int(lmul)
-    n = 1
+    n = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # VV Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
@@ -26,13 +26,13 @@ def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
     for i in range(100):     
         k = i%30+1
         if k % emul == 0 and k % lmul == 0 and k not in [31, 8, 16, 24] and not is_overlap(k, lmul, 8, emul) and k!= 12 and k != 20 and k !=24:
-            n+=1
+            n += 1
             print("  TEST_VSXEI_OP_rd%d( "%k+str(n)+",  %s.v, %s.v, "%(instr1,instr)+"16"+", "+"0x00ff00ff"+",  "+"0 + tdat"+", "+"idx16dat"+" );",file=f)
     
         k = i%30+2
         if(k == 31 or k == 12 or k == 20 or k == 24):
             continue;
-        n +=1
+        n += 1
         print("  TEST_VSXEI_OP_1%d( "%k+str(n)+",  %s.v, %s.v, "%(instr1,instr)+"16"+", "+"0x00ff00ff"+", "+"-12 + tdat4"+", "+"idx16dat"+" );",file=f)
     return n
 
