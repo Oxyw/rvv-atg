@@ -125,10 +125,11 @@ test_ ## testnum: \
     li TESTNUM, testnum; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD(x20, testreg); \
-    RVTEST_BASEUPD(x20) \
+    addi x20, x20, REGWIDTH; \
     addi x31, x31, 1; \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
+    addi x20, x20, -REGWIDTH; \
 
 #define TEST_CASE_LOOP_W( testnum, testreg, code...) \
 test_ ## testnum: \
@@ -140,10 +141,11 @@ test_ ## testnum: \
     csrr x30, vl; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD(x20, testreg); \
-    RVTEST_BASEUPD(x20) \
+    addi x20, x20, REGWIDTH; \
     addi x31, x31, 1; \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
+    addi x20, x20, -REGWIDTH; \
     VSET_VSEW_4AVL; 
 
 #define TEST_CASE_LOOP_CONTINUE( testnum, testreg, code...) \
@@ -153,33 +155,12 @@ test_ ## testnum: \
     li TESTNUM, testnum; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD(x20, testreg); \
-    RVTEST_BASEUPD(x20) \
+    addi x20, x20, REGWIDTH; \
     addi x31, x31, 1; \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
+    addi x20, x20, -REGWIDTH; \
 
-// TODO:?
-// Then compare each element between `testreg` and v15, until `vl`
-// vl should be set before calling `TEST_CASE_LOOP_VSLIDEUP()`
-#define TEST_CASE_LOOP_VSLIDEUP( testnum, testreg, offset, code...) \
-test_ ## testnum: \
-    code; \
-    li x29, offset; \
-    csrr x31, vstart; \
-    csrr x30, vl; \
-    li TESTNUM, testnum; \
-    bge x31, x29, test_loop_vslide2_ ## testnum; \
-test_loop_vslide1_ ## testnum: \
-    addi x31, x31, 1; \
-    vslidedown.vi testreg, testreg, 1; \
-    blt x31, x29, test_loop_vslide1_ ## testnum; \
-test_loop_vslide2_ ## testnum: \
-    VMVXS_AND_MASK_VSEW( x14, testreg ) \
-    VECTOR_RVTEST_SIGUPD(x20, testreg); \
-    RVTEST_BASEUPD(x20) \
-    vslidedown.vi testreg, testreg, 1; \
-    addi x31, x31, 1; \
-    blt x31, x30, test_loop_vslide2_ ## testnum; \
 
 #define TEST_CASE_FP( testnum, testreg, val1, val2, code... ) \
 test_ ## testnum: \
@@ -210,10 +191,11 @@ test_ ## testnum: \
     frflags a1; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-    RVTEST_BASEUPD(x20) \
+    addi x20, x20, REGWIDTH; \
     addi x31, x31, 1; \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
+    addi x20, x20, -REGWIDTH; \
 
 #define TEST_CASE_LOOP_W_FP( testnum, testreg, code...) \
 test_ ## testnum: \
@@ -226,10 +208,11 @@ test_ ## testnum: \
     frflags a1; \
 1:  VMVXS_AND_MASK_VSEW( x14, testreg ) \
     VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-    RVTEST_BASEUPD(x20) \
+    addi x20, x20, REGWIDTH; \
     addi x31, x31, 1; \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
+    addi x20, x20, -REGWIDTH; \
 
 
 // Use feq.d to compare correctval(f2) computed by fadd.d and answer(f3) computed by vfwadd
