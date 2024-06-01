@@ -120,6 +120,6 @@ After genering, run `python move_generate_all_elf.py`, this will check if genera
 
 ## Signature
 
-1. For results in Vd, save signature into x20.   
+1. Save the results in Vd and CSRs, including xcsr(mstatus), fcsr and vcsr.
 
-2. For CSRs, xcsr(mstatus) to x12, fcsr and vcsr to x24.
+2. Use x20 as basereg.

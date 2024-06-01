@@ -140,8 +140,8 @@ def print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, generate_data=False, 
     RVTEST_DATA_END\n", file=f)
     num_elem = int(vlen * lmul / vsew)
     num_tests = test_num_tuple[0] + test_num_tuple[1]
-    fvcsr_num = 10  # 3 fcsr, 7 vcsr
-    print_rvmodel_data([num_tests, (test_num_tuple[0] + num_elem * test_num_tuple[1]), fvcsr_num * num_tests], f)
+    xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
+    print_rvmodel_data([0, (test_num_tuple[0] + num_elem * test_num_tuple[1]) + xfvcsr_num * num_tests, 0], f)
 
 
 def create_empty_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):

@@ -39,8 +39,8 @@
     csrr x1, vlenb; \
     RVTEST_SIGUPD(basereg, x1);
 
-// Save CSRs: xcsr to x12, fcsr to x24, vcsr to x24
-#define XFVCSR_SIGUPD XCSR_SIGUPD(x12); FCSR_SIGUPD(x24); VCSR_SIGUPD(x24);
+// Save CSRs: xcsr, fcsr, vcsr
+#define XFVCSR_SIGUPD XCSR_SIGUPD(x20); FCSR_SIGUPD(x20); VCSR_SIGUPD(x20);
 
 // Compare only low VSEW-bits of v14 and correctval
 #define VMVXS_AND_MASK_VSEW( targetreg, testreg ) \

@@ -11,15 +11,8 @@ def get_mask_bit(index):
 
 def print_rvmodel_data(arr, f):
     print(" RVMODEL_DATA_BEGIN\n\
-    signature_x12_0:\n\
-        .fill %d*(XLEN/32),4,0xdeadbeef\n\
-    \n\
     \n\
     signature_x20_0:\n\
-        .fill %d*(XLEN/32),4,0xdeadbeef\n\
-    \n\
-    \n\
-    signature_x24_0:\n\
         .fill %d*(XLEN/32),4,0xdeadbeef\n\
     \n\
     \n\
@@ -38,7 +31,7 @@ def print_rvmodel_data(arr, f):
     #endif\n\
     \n\
     RVMODEL_DATA_END\n\
-    "%(arr[0], arr[1], arr[2]), file=f)
+    "%(arr[1]), file=f)
 
 def generate_idx_data(f):
     vlen = int(os.environ['RVV_ATG_VLEN'])
@@ -113,9 +106,7 @@ def print_common_header(instr, f):
     RVTEST_CODE_BEGIN\n\
     RVTEST_VSET\n\
     \n\
-    RVTEST_SIGBASE( x12,signature_x12_0)\n\
     RVTEST_SIGBASE( x20,signature_x20_0)\n\
-    RVTEST_SIGBASE( x24,signature_x24_0)\n\
     \n\
     " % instr, file=f)
 
@@ -140,8 +131,8 @@ def gen_arr_load(n, rd_data_multiplier = 1):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
-    fvcsr_num = 10  # 3 fcsr, 7 vcsr
-    arr = [n, int(vlen * lmul * rd_data_multiplier / vsew) * (n), fvcsr_num * n]
+    xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
+    arr = [0, int(vlen * lmul * rd_data_multiplier / vsew) * n + xfvcsr_num * n, 0]
     return arr
 
 def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
@@ -149,8 +140,8 @@ def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1):
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     test_num = test_num_tuple[0] + test_num_tuple[1] + test_num_tuple[2]
-    fvcsr_num = 10  # 3 fcsr, 7 vcsr
-    arr = [test_num, int(vlen * lmul * rd_data_multiplier / vsew) * (test_num), fvcsr_num * test_num]
+    xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
+    arr = [0, int(vlen * lmul * rd_data_multiplier / vsew) * test_num + xfvcsr_num * test_num, 0]
     return arr
 
 
