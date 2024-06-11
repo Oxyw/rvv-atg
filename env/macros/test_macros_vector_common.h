@@ -74,13 +74,6 @@ test_ ## testnum: \
     VSET_VSEW \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
 
-#define TEST_CASE_MASK( testnum, testreg,  code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    vpopc.m x14, testreg; \
-    VECTOR_RVTEST_SIGUPD(x20, testreg);
 
 #define TEST_CASE_MASK_4VL( testnum, testreg,  code... ) \
 test_ ## testnum: \
@@ -162,25 +155,6 @@ test_ ## testnum: \
     addi x20, x20, -REGWIDTH; \
 
 
-#define TEST_CASE_FP( testnum, testreg, val1, val2, code... ) \
-test_ ## testnum: \
-  li x7, 0; \
-  vmv.v.x v14, x7; \
-  li  TESTNUM, testnum; \
-  la  a0, test_ ## testnum ## _data ;\
-  code; \
-  XFVCSR_SIGUPD \
-  vfmv.f.s f3, testreg; \
-  li a3, 1; \
-  frflags a1; \
-  VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-  .pushsection .data; \
-  .align 2; \
-  test_ ## testnum ## _data: \
-  .word val1; \
-  .word val2; \
-  .popsection
-
 #define TEST_CASE_LOOP_FP( testnum, testreg,  code...) \
 test_ ## testnum: \
     code; \
@@ -214,30 +188,6 @@ test_ ## testnum: \
     bne x31, x30, 1b; \
     addi x20, x20, -REGWIDTH; \
 
-
-// Use feq.d to compare correctval(f2) computed by fadd.d and answer(f3) computed by vfwadd
-#define TEST_CASE_W_FP( testnum, testreg,  val1, val2, code... ) \
-test_ ## testnum: \
-  li x7, 0; \
-  VSET_DOUBLE_VSEW \
-  vmv.v.x v14, x7; \
-  VSET_VSEW \
-  li  TESTNUM, testnum; \
-  la  a0, test_ ## testnum ## _data ;\
-  code; \
-  XFVCSR_SIGUPD \
-  VSET_DOUBLE_VSEW \
-  vfmv.f.s f3, testreg; \
-  VSET_VSEW \
-  li a3, 1; \
-  frflags a1; \
-  VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-  .pushsection .data; \
-  .align 2; \
-  test_ ## testnum ## _data: \
-  .word val1; \
-  .word val2; \
-  .popsection
 
 // Use feq.d to compare correctval(f2) computed by fadd.d and answer(f3) computed by vfwadd
 #define TEST_CASE_WVWF_FP( testnum, testreg,  val1, val2, code... ) \
@@ -302,12 +252,6 @@ test_ ## testnum: \
     VSET_VSEW \
   )
 
-#define TEST_VLEFF_OP( testnum, inst, eew, result1, result2, base ) \
-  TEST_CASE_LOOP( testnum, v16, \
-    la  x1, base; \
-    inst v16, (x1); \
-    csrr x30, vl; \
-  )
 
 
 #define TEST_VLRE2_OP( testnum, inst, eew, result1, result2, base ) \
@@ -380,52 +324,6 @@ test_ ## testnum: \
   )
 
 
-// For VF instruction that order of oprands is 'vd, rs1, vs2'(rs-vs), val1-rs1, val2-vs2
-#define TEST_FP_VF_OP_RV( testnum, inst,  val1, val2 ) \
-  TEST_CASE_FP( testnum, v24, val1, val2,     \
-    flw f0, 0(a0); \
-    flw f1, 4(a0); \
-    vfmv.s.f v8, f0; \
-    flw f2, 8(a0); \
-    inst v24, f1, v8; \
-  )
-
-
-#define TEST_W_FP_VV_OP_NEGRESULT( testnum, inst,  val1, val2 ) \
-  TEST_CASE_W_FP( testnum, v24,  val1, val2,     \
-    flw f0, 0(a0); \
-    flw f1, 4(a0); \
-    vfmv.s.f v8, f0; \
-    vfmv.s.f v16, f1; \
-    fcvt.d.s f0, f0; \
-    fcvt.d.s f1, f1; \
-    fneg.d f2, f2; \
-    inst v24, v8, v16; \
-  )
-
-
-#define TEST_W_FP_VF_OP_RV( testnum, inst,  val1, val2 ) \
-  TEST_CASE_W_FP( testnum, v24, val1, val2,     \
-    flw f0, 0(a0); \
-    flw f1, 4(a0); \
-    flw f4, 4(a0); \
-    vfmv.s.f v8, f0; \
-    fcvt.d.s f0, f0; \
-    fcvt.d.s f4, f4; \
-    inst v24, f1, v8; \
-  )
-
-#define TEST_W_FP_VF_OP_RV_NEGRESULT( testnum, inst,  val1, val2 ) \
-  TEST_CASE_W_FP( testnum, v24,  val1, val2,     \
-    flw f0, 0(a0); \
-    flw f1, 4(a0); \
-    flw f4, 4(a0); \
-    vfmv.s.f v8, f0; \
-    fcvt.d.s f0, f0; \
-    fcvt.d.s f4, f4; \
-    fneg.d f2, f2; \
-    inst v24, f1, v8; \
-  )
 
 
 // For Widen-Floating instruction that order of oprands is 'vd(2*SEW), vs2(SEW), vs1(2*SEW)'
