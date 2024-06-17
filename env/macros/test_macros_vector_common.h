@@ -189,28 +189,14 @@ test_ ## testnum: \
     addi x20, x20, -REGWIDTH; \
 
 
-// Use feq.d to compare correctval(f2) computed by fadd.d and answer(f3) computed by vfwadd
-#define TEST_CASE_WVWF_FP( testnum, testreg,  val1, val2, code... ) \
+#define TEST_CASE_W_FP( testnum, testreg,  code... ) \
 test_ ## testnum: \
-  li x7, 0; \
-  vmv.v.x v14, x7; \
-  li  TESTNUM, testnum; \
-  la  a0, test_ ## testnum ## _data ;\
-  code; \
-  XFVCSR_SIGUPD \
-  VSET_DOUBLE_VSEW \
-  vfmv.f.s f3, testreg; \
-  VSET_VSEW \
-  li a3, 1; \
-  frflags a1; \
-  VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-  .pushsection .data; \
-  .align 2; \
-  test_ ## testnum ## _data: \
-  .dword val1; \
-  .word val2; \
-  .float 0; \
-  .popsection
+    code; \
+    XFVCSR_SIGUPD \
+    li  TESTNUM, testnum; \
+    VSET_DOUBLE_VSEW \
+    frflags a1; \
+    VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
 
 
 #define TEST_CASE_MASK_FP_4VL( testnum, testreg,  code... ) \
@@ -323,22 +309,6 @@ test_ ## testnum: \
     load_inst v16, (x1); \
   )
 
-
-
-
-// For Widen-Floating instruction that order of oprands is 'vd(2*SEW), vs2(SEW), vs1(2*SEW)'
-#define TEST_W_FP_WV_OP_DS( testnum, inst, val1, val2 ) \
-  TEST_CASE_WVWF_FP( testnum, v24, val1, val2,  \
-    fld f0, 0(a0); \
-    flw f1, 8(a0); \
-    flw f4, 8(a0); \
-    VSET_DOUBLE_VSEW \
-    vfmv.s.f v8, f0; \
-    VSET_VSEW \
-    vfmv.s.f v16, f1; \
-    fcvt.d.s f4, f4; \
-    inst v24, v16, v8; \
-  )
 
 
 
