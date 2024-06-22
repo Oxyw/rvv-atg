@@ -71,7 +71,6 @@ test_ ## testnum: \
     XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
     VSET_DOUBLE_VSEW \
-    VSET_VSEW \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
 
 
