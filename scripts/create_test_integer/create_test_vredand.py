@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_integer.create_test_common import  generate_macros_vred, generate_macros_vvvxvi, generate_tests_vred, generate_tests_vvvxvi
+from scripts.create_test_integer.create_test_common import generate_macros_vred, generate_tests_vred
 import re
 
 instr = 'vredand'
@@ -45,10 +45,10 @@ def create_first_test_vredand(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_
     generate_macros_vred(f, lmul)
 
     # Generate tests
-    n = generate_tests_vred(instr, f, rs1_val, rs2_val, lmul, instr_suffix='vs', generate_vx=False, generate_vi=False)
+    n = generate_tests_vred(instr, f, rs1_val, rs2_val, lmul)
 
     # Common const information
-    print_common_withmask_ending(n, f, int(vlen * lmul / vsew))
+    print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, (n, 0, 0), vsew, f, generate_vi = False, generate_vx = False, generate_vv = False, is_reduction = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
