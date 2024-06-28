@@ -120,8 +120,31 @@ def create_first_test(instr, xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_p
         instr)
     return eval(func_str)
 
-def check_type(ins, type):
-  return True
+integer_instr = ['vadc', 'vadd', 'vand', 'vdiv', 'vdivu', 'vmacc', 'vmadc', 'vmadd', 'vmax', 'vmaxu', 'vmerge', 'vmin', 'vminu', 'vmsbc', 'vmseq', 'vmsgt', 'vmsgtu', 'vmsle', 'vmsleu', 'vmslt', 'vmsltu', 'vmsne', 'vmulh', 'vmulhsu', 'vmulhu', 'vmul', 'vnmsac', 'vnmsub', 'vnsra', 'vnsrl', 'vor', 'vredand', 'vredmax', 'vredmaxu', 'vredmin', 'vredminu', 'vredor', 'vredsum', 'vredxor', 'vrem', 'vremu', 'vrsub', 'vsadd', 'vsaddu', 'vsbc', 'vsext', 'vsll', 'vsra', 'vsrl', 'vssub', 'vssubu', 'vsub', 'vwadd', 'vwaddu', 'vwmacc', 'vwmaccsu', 'vwmaccu', 'vwmaccus', 'vwmul', 'vwmulsu', 'vwmulu', 'vwredsum', 'vwredsumu', 'vwsub', 'vwsubu', 'vxor', 'vzext']
+mask_instr = ['vfirst', 'vid', 'viota', 'vmand', 'vmandnot', 'vmnand', 'vmor', 'vmornot', 'vmsbf', 'vmxnor', 'vmxor', 'vpopc']
+floatingpoint_instr = ['vfadd', 'vfclass', 'vfcvt', 'vfdiv', 'vfmacc', 'vfmadd', 'vfmax', 'vfmerge', 'vfmin', 'vfmsac', 'vfmsub', 'vfmul', 'vfmv', 'vfncvt', 'vfnmacc', 'vfnmadd', 'vfnmsac', 'vfnmsub', 'vfrdiv', 'vfrec7', 'vfredmax', 'vfredmin', 'vfredosum', 'vfredusum', 'vfrsqrt7', 'vfrsub', 'vfsgnj', 'vfsgnjn', 'vfsgnjx', 'vfsqrt', 'vfsub', 'vfwadd', 'vfwcvt', 'vfwmacc', 'vfwmsac', 'vfwmul', 'vfwnmacc', 'vfwnmsac', 'vfwredsum', 'vfwsub', 'vmfeq', 'vmfge', 'vmfgt', 'vmfle', 'vmflt', 'vmfne']
+permute_instr = ['vcompress', 'vfslide', 'vmre', 'vmv', 'vrgather', 'vrgatherei16', 'vslide', 'vslide1']
+fixpoint_instr = ['vaadd', 'vaaddu', 'vasub', 'vasubu', 'vnclip', 'vnclipu', 'vsmul', 'vssra', 'vssrl']
+loadstore_instr = ['vle8', 'vle16', 'vle32', 'vle64', 'vlre8', 'vlre16', 'vlre32', 'vlse8', 'vlse16', 'vlse32', 'vlse64', 'vlsege8', 'vlsege16', 'vlsege32', 'vlssege8', 'vlssege16', 'vlssege32', 'vluxei8', 'vluxei16', 'vluxei32', 'vluxsegei8', 'vluxsegei16', 'vluxsegei32', 'vse8', 'vse16', 'vse32', 'vsre', 'vsse8', 'vsse16', 'vsse32', 'vssege8', 'vssege16', 'vssege32', 'vsssege8', 'vsssege16', 'vsssege32', 'vsuxei8', 'vsuxei16', 'vsuxei32', 'vsuxsegei8', 'vsuxsegei16', 'vsuxsegei32']
+def check_type(instr, type):
+    if type == "i":
+        valid_instr = integer_instr
+    elif type == "x":
+        valid_instr = fixpoint_instr
+    elif type == "p":
+        valid_instr = permute_instr
+    elif type == "f":
+        valid_instr = floatingpoint_instr
+    elif type == "l":
+        valid_instr = loadstore_instr
+    elif type == "m":
+        valid_instr = mask_instr
+    else:
+        return False
+    if instr in valid_instr:
+        return True
+    else:
+        return False
 
 def check_spikelog(dir, instr):
   log = "%s/%s"%(dir, 'spike_%s_final.log'%instr)

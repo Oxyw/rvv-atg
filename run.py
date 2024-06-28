@@ -54,7 +54,7 @@ def parse_args(cwd):
     parser.add_argument("-i", "--instr", type=str,
                         help="One Instruction Needing to Generate Tests", dest="i")
     parser.add_argument("-t", "--type", type=str,
-                        help="Type of Instruction: i, f, m", dest="t")
+                        help="Type of Instruction: i, f, m, x, p, l", dest="t")
     parser.add_argument("--tool", type=str,
                         help="Tool to rgenerate log: spike(default), sail", default="spike")
     parser.add_argument("-b","--batch", type=int, default="1",
@@ -159,10 +159,16 @@ def main():
     os.environ["RVV_ATG_ROOT"] = cwd
     args = parse_args(cwd)
     setup_logging(args.verbose)
+    if (args.vsew > args.elen * args.lmul):
+        logging.error("(vsew <= elen * lmul) is not satisfied!")
+        return
+    if not check_type(args.i, args.t):
+        logging.error("Invalid type or instruction!")
+        return
     output_dir = create_output(args)
     cgf = create_cgf_path(args.i, args.t, args.lmul, cwd, output_dir)
     rewrite_macro_vtavma(args.vsew, args.lmul, args.vta, args.vma)
-    logging.info("RVV-ATG: instr: %s, vlen: %d, vsew: %d, lmul: %f"%(args.i, args.vlen, args.vsew, args.lmul))
+    logging.info("RVV-ATG: instr: %s, vlen: %d, elen: %d, vsew: %d, lmul: %f"%(args.i, args.vlen, args.elen, args.vsew, args.lmul))
     os.environ["RVV_ATG_VLEN"] = str(args.vlen)
     os.environ["RVV_ATG_VSEW"] = str(args.vsew)
     os.environ["RVV_ATG_LMUL"] = str(args.lmul)
@@ -170,9 +176,6 @@ def main():
     os.environ["RVV_ATG_VMA"] = str(args.vma)
     os.environ["RVV_ATG_VTA"] = str(args.vta)
     os.environ["RVV_ATG_AGNOSTIC_TYPE"] = str(args.agnostic_type)
-    if not check_type(args.i, args.t):
-        logging.error("Type is not match Instruction!")
-        return
     if args.t == "f":
         run_vf(cwd, args, cgf, output_dir)
     elif args.t == "i" or args.t == "x":
