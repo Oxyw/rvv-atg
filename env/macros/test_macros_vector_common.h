@@ -188,6 +188,14 @@ test_ ## testnum: \
     addi x20, x20, -REGWIDTH; \
 
 
+#define TEST_CASE_FP( testnum, testreg,  code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li  TESTNUM, testnum; \
+    frflags a1; \
+    VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
+
 #define TEST_CASE_W_FP( testnum, testreg,  code... ) \
 test_ ## testnum: \
     code; \

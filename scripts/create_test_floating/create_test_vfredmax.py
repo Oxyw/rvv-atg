@@ -41,13 +41,13 @@ def create_first_test_vfredmax(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vfred(f, vsew, lmul, test_vv = True)
+    generate_macros_vfred(f, vsew, lmul)
 
     # Generate tests
-    n = generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vs", test_vv = True)
+    n = generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vs")
 
     # Common const information
-    print_ending(f, generate_data = True, rs1_val = rs1_val, rs2_val = rs2_val, print_mask = True, num_elem = int(vlen * lmul / vsew), test_tuples=(0,n,0))
+    print_common_ending_rs1rs2rd_vvvfrv(rs1_val, rs2_val, (n, 0, 0), vsew, f, generate_vv = False, generate_vf = False, generate_rv = False, is_reduction=True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
