@@ -7,95 +7,73 @@ import re
 instr = 'vfmv'
 
 
-def generate_macros(f, vsew):
+def generate_macros(f, vsew, lmul):
     for n in range(1, 32):
         print("#define TEST_VFMVF_OP_rs_%d( testnum, base ) \\\n\
         TEST_CASE_LOOP_FP( testnum, v24,  \\\n\
-            li TESTNUM, testnum; \\\n\
+            VSET_VSEW_4AVL \\\n\
+            la x7, rd_origin_data; \\\n\
+            vle%d.v v24, (x7); \\\n\
             la a0, base; \\\n\
             fl%s f%d, 0(a0); \\\n\
             vfmv.v.f v24, f%d; \\\n\
-        )\n" % (n, "w" if vsew == 32 else "d", n, n), file=f)
+        )" % (n, vsew, "w" if vsew == 32 else "d", n, n), file=f)
     for n in range(1, 32):
+        if n % lmul != 0:
+            continue
         print("#define TEST_VFMVF_OP_rd_%d( testnum, base ) \\\n\
         TEST_CASE_LOOP_FP( testnum, v%d,  \\\n\
-            li TESTNUM, testnum; \\\n\
+            VSET_VSEW_4AVL \\\n\
+            la x7, rd_origin_data; \\\n\
+            vle%d.v v%d, (x7); \\\n\
             la a0, base; \\\n\
             fl%s f7, 0(a0); \\\n\
             vfmv.v.f v%d, f7; \\\n\
-        )\n" % (n, n, "w" if vsew == 32 else "d", n), file=f)
+        )" % (n, n, vsew, n, "w" if vsew == 32 else "d", n), file=f)
 
+    print("#define TEST_VFMVSF_OP( testnum, base )  \\\n\
+    TEST_CASE_FP( testnum, v24,  \\\n\
+        VSET_VSEW_4AVL \\\n\
+        la x7, rd_origin_data; \\\n\
+        vle%d.v v24, (x7); \\\n\
+        la a0, base; \\\n\
+        fl%s f7, 0(a0); \\\n\
+        vfmv.s.f v24, f7; \\\n\
+    )" % (vsew, "w" if vsew == 32 else "d"), file=f)
     for n in range(1, 32):
-        print("#define TEST_VFMVS_OP_rs_%d( testnum, base ) \\\n\
-        TEST_CASE_X( testnum, x8,  \\\n\
-            li TESTNUM, testnum; \\\n\
-            la a0, base; \\\n\
-            fl%s f%d, 0(a0); \\\n\
-            vfmv.s.f v24, f%d; \\\n\
-            vfmv.f.s f8, v24; \\\n\
-            fcvt.w.s x8, f8; \\\n\
-        )\n" % (n, "w" if vsew == 32 else "d", n, n), file=f)
-    for n in range(1, 32):
-        print("#define TEST_VFMVS_OP_rsrd_%d( testnum, base ) \\\n\
-        TEST_CASE_X( testnum, x8,  \\\n\
-            li TESTNUM, testnum; \\\n\
+        print("#define TEST_VFMVFS_OP_rsrd_%d( testnum, base ) \\\n\
+        TEST_CASE_FPREG( testnum, f8,  \\\n\
+            VSET_VSEW_4AVL \\\n\
+            la x7, rd_origin_data; \\\n\
+            vle%d.v v%d, (x7); \\\n\
             la a0, base; \\\n\
             fl%s f7, 0(a0); \\\n\
             vfmv.s.f v%d, f7; \\\n\
             vfmv.f.s f8, v%d; \\\n\
-            fcvt.w.s x8, f8; \\\n\
-        )\n" % (n, "w" if vsew == 32 else "d", n, n), file=f)
-    for n in range(1, 32):
-        print("#define TEST_VFMVS_OP_rd_%d( testnum, base ) \\\n\
-        TEST_CASE_X( testnum, x8,  \\\n\
-            li TESTNUM, testnum; \\\n\
-            la a0, base; \\\n\
-            fl%s f7, 0(a0); \\\n\
-            vfmv.s.f v24, f7; \\\n\
-            vfmv.f.s f%d, v24; \\\n\
-            fcvt.w.s x8, f%d; \\\n\
-        )\n" % (n, "w" if vsew == 32 else "d", n, n), file=f)
+        )" % (n, vsew, n, "w" if vsew == 32 else "d", n, n), file=f)
 
 
 def generate_tests(f, lmul, rs1_val, rs2_val):
     n = 0
     print("  #-------------------------------------------------------------", file=f)
-    print("  # vfmv.f.s / vfmv.v.f Tests", file=f)
+    print("  # vfmv.s.f Tests", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(len(rs1_val)):
         n += 1
-        print("  TEST_VFMVF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
-
-    print("  #-------------------------------------------------------------", file=f)
-    print("  # vfmv.f.s / vfmv.s.f Tests", file=f)
-    print("  #-------------------------------------------------------------", file=f)
-
-    for i in range(len(rs1_val)):
-        n += 1
-        print("  TEST_VFMVS_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
+        print("  TEST_VFMVSF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
 
     k = 0
-
+    
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.f.s / vfmv.s.f Tests (different register)", file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(1, 32):
+        if i % lmul != 0:
+            continue
         n += 1
-        print("  TEST_VFMVS_OP_rs_%d( " % i + str(n) +
-              ",  fdat_rs1_" + str(k) + " );", file=f)
-        k = (k + 1) % len(rs1_val)
-        
-        if i % lmul == 0:
-            n += 1
-            print("  TEST_VFMVS_OP_rsrd_%d( " %
-                i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
-            k = (k + 1) % len(rs1_val)
-        
-        n += 1  
-        print("  TEST_VFMVS_OP_rd_%d( " % i + str(n) +
-              ",  fdat_rs1_" + str(k) + " );", file=f)
+        print("  TEST_VFMVFS_OP_rsrd_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
         k = (k + 1) % len(rs1_val)
     
     single_test_num = n
@@ -106,15 +84,14 @@ def generate_tests(f, lmul, rs1_val, rs2_val):
 
     for i in range(1, 32):
         n += 1
-        print("  TEST_VFMVF_OP_rs_%d( " % i + str(n) +
-              ",  fdat_rs1_" + str(k) + " );", file=f)
+        print("  TEST_VFMVF_OP_rs_%d( " % i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
         k = (k + 1) % len(rs1_val)
         
-        if i % lmul == 0:
-            n += 1
-            print("  TEST_VFMVF_OP_rd_%d( " %
-                i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
-            k = (k + 1) % len(rs1_val)
+        if i % lmul != 0:
+            continue
+        n += 1
+        print("  TEST_VFMVF_OP_rd_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
+        k = (k + 1) % len(rs1_val)
     
     loop_test_num = n - single_test_num
     return (single_test_num, loop_test_num)
@@ -135,6 +112,8 @@ def print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, generate_data=False, 
 
     if generate_data:
         generate_fdat_seg(f, rs1_val, rs2_val, vsew)
+    
+    print_origin_data_ending(f)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)
@@ -179,7 +158,7 @@ def create_first_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pat
     rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros(f, vsew)
+    generate_macros(f, vsew, lmul)
 
     # Generate tests
     test_num_tuple = generate_tests(f, lmul, rs1_val, rs2_val)
