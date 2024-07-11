@@ -200,7 +200,7 @@ def create_first_test_vfwredsum(xlen, vlen, vsew, lmul, vta, vma, output_dir, rp
     n = generate_tests_vfwred(f, vlen, vsew, lmul, rs1_val, rs2_val)
 
     # Common const information
-    print_common_ending_rs1rs2rd_wvwf(rs1_val, rs2_val, (0,0,n,0), vsew, f, generate_vv=False, generate_vf=False, generate_wvwf=False, is_reduction=True)
+    print_common_ending_rs1rs2rd_widen(rs1_val, rs2_val, (0,0,n,0), vsew, f, is_reduction=True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

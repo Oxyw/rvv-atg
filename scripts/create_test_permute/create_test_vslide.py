@@ -266,7 +266,7 @@ def print_ending_vslide(f, vlen, vsew, tuples):
 
     print("\n\
     RVTEST_DATA_END\n", file=f)
-    arr = gen_arr_compute(tuples, 1)
+    arr = gen_arr_compute(tuples)
     print_rvmodel_data(arr, f)
 
 

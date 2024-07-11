@@ -9,6 +9,15 @@ def get_mask_bit(index):
     return mask_data_ending[int(index / 32)] >> (index % 32) & 1
 
 
+def get_aligned_reg(reg, lmul_reg, lmul_target):
+    for i in range(1, 32):
+        if i % lmul_target != 0:
+            continue
+        if (i > reg + lmul_reg - 1) or (i + lmul_target - 1 < reg):
+            return i
+    return 0
+
+
 def valid_aligned_regs(reg):
     i = reg // 8
     if i == 0 or i == 3:
@@ -137,20 +146,20 @@ def print_common_ending(f, arr=[0,0,0]):
     print_rvmodel_data(arr, f)
 
 
-def gen_arr_load(n, rd_data_multiplier = 1):
+def gen_arr_load(n):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    arr = [0, int(vlen * lmul * rd_data_multiplier / vsew) * n + xfvcsr_num * n, 0]
+    arr = [0, int(vlen * lmul / vsew) * n + xfvcsr_num * n, 0]
     return arr
 
-def gen_arr_compute(test_num_tuple, rd_data_multiplier = 1, is_reduction = False):
+def gen_arr_compute(test_num_tuple, is_reduction = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     test_num = sum(test_num_tuple)
-    result_num = 1 if is_reduction else int(vlen * lmul * rd_data_multiplier / vsew)
+    result_num = 1 if is_reduction else int(vlen * lmul / vsew)
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
     arr = [0, result_num * test_num + xfvcsr_num * test_num, 0]
     return arr
@@ -518,33 +527,12 @@ def print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, test_num_tuple, vsew, 
     for i in range(len(rs2_val)):
         print_data_width_prefix(f, vsew * rs2_data_multiplier)
         print("%s"%rs2_val[i], file=f)
-
-    if generate_vv:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_vv:", file=f)
-        for i in range(test_num_tuple[0] * num_elem):
-            print_data_width_prefix(f, vsew)
-            print("0x5201314", file=f)
-
-    if generate_vx:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_vx:", file=f)
-        for i in range(test_num_tuple[1] * num_elem):
-            print_data_width_prefix(f, vsew)
-            print("0x5201314", file=f)
-
-    if generate_vi:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_vi:", file=f)
-        for i in range(test_num_tuple[2] * num_elem):
-            print_data_width_prefix(f, vsew)
-            print("0x5201314", file=f)
     
     print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_compute(test_num_tuple, rd_data_multiplier, is_reduction=is_reduction)
+    arr = gen_arr_compute(test_num_tuple, is_reduction=is_reduction)
     print_rvmodel_data(arr, f)
 
 def print_common_ending_rs1rs2rd_vw(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_wvwx = True, is_reduction = False):
@@ -589,34 +577,12 @@ def print_common_ending_rs1rs2rd_vw(rs1_val, rs2_val, test_num_tuple, vsew, f, r
     for i in range(len(rs2_val)):
         print_data_width_prefix(f, vsew * rs2_data_multiplier * 2)
         print("%s"%rs2_val[i], file=f)
-
-    if is_reduction == False:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_vv:", file=f)
-        for i in range(test_num_tuple[0] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
-        print("\nrd_data_vx:", file=f)
-        for i in range(test_num_tuple[1] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
-
-    if generate_wvwx:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier * 2 / 8)), file=f)
-        print("\nrd_data_wv:", file=f)
-        for i in range(test_num_tuple[2] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
-        print("\nrd_data_wx:", file=f)
-        for i in range(test_num_tuple[3] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
     
     print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_compute(test_num_tuple, rd_data_multiplier, is_reduction=is_reduction)
+    arr = gen_arr_compute(test_num_tuple, is_reduction=is_reduction)
     print_rvmodel_data(arr, f)
 
 
@@ -649,37 +615,16 @@ def print_common_ending_rs1rs2rd_vvvfrv(rs1_val, rs2_val, test_num_tuple, vsew, 
     for i in range(len(rs2_val)):
         print_data_width_prefix(f, vsew * rs2_data_multiplier)
         print("%s"%rs2_val[i], file=f)
-
-    if generate_vv:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_vv:", file=f)
-        for i in range(test_num_tuple[0] * num_elem):
-            print_data_width_prefix(f, vsew)
-            print("0x5201314", file=f)
-
-    if generate_vf:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_vf:", file=f)
-        for i in range(test_num_tuple[1] * num_elem):
-            print_data_width_prefix(f, vsew)
-            print("0x5201314", file=f)
-
-    if generate_rv:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-        print("rd_data_rv:", file=f)
-        for i in range(test_num_tuple[2] * num_elem):
-            print_data_width_prefix(f, vsew)
-            print("0x5201314", file=f)
     
     print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_compute(test_num_tuple, rd_data_multiplier, is_reduction=is_reduction)
+    arr = gen_arr_compute(test_num_tuple, is_reduction=is_reduction)
     print_rvmodel_data(arr, f)
 
 
-def print_common_ending_rs1rs2rd_wvwf(rs1_val, rs2_val, test_num_tuple, vsew, f, generate_vv = True, generate_vf = True, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_wvwf = True, is_reduction = False):
+def print_common_ending_rs1rs2rd_widen(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_wvwf = False, is_reduction = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     num_elem = int(vlen * lmul / vsew)
@@ -719,37 +664,12 @@ def print_common_ending_rs1rs2rd_wvwf(rs1_val, rs2_val, test_num_tuple, vsew, f,
     for i in range(len(rs2_val)):
         print_data_width_prefix(f, vsew * rs2_data_multiplier * 2)
         print("%s"%rs1_val[i], file=f)
-
-    if generate_vv:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier * 2 / 8)), file=f)
-        print("rd_data_vv:", file=f)
-        for i in range(test_num_tuple[0] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
-
-    if generate_vf:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier * 2 / 8)), file=f)
-        print("rd_data_vf:", file=f)
-        for i in range(test_num_tuple[1] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
-
-    if generate_wvwf:
-        print("\n.align %d"%(int(vsew * rd_data_multiplier * 2 / 8)), file=f)
-        print("\nrd_data_wv:", file=f)
-        for i in range(test_num_tuple[2] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
-        print("\nrd_data_wf:", file=f)
-        for i in range(test_num_tuple[3] * num_elem):
-            print_data_width_prefix(f, vsew * 2)
-            print("0x5201314", file=f)
     
     print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_compute(test_num_tuple, rd_data_multiplier, is_reduction=is_reduction)
+    arr = gen_arr_compute(test_num_tuple, is_reduction=is_reduction)
     print_rvmodel_data(arr, f)
 
 
@@ -757,9 +677,6 @@ def print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs1_int_val, test_num_tuple, vse
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     num_elem = int(vlen * lmul / vsew)
-    loop_num = int(len(rs1_val) / num_elem)
-    lmul_1 = 1 if lmul < 1 else int(lmul)
-    num_elem_1 = int(vlen * lmul_1 / vsew)
 
     print("#endif\n\
     \n\
@@ -785,23 +702,12 @@ def print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs1_int_val, test_num_tuple, vse
     for i in range(len(rs1_int_val)):
         print_data_width_prefix(f, vsew * rs1_data_multiplier)
         print("%s"%rs1_val[i], file=f)
-    
-    print("\n.align %d"%(int(vsew * rd_data_multiplier / 8)), file=f)
-    print("rd_data:", file=f)
-    for i in range(test_num_tuple[0] * num_elem):
-        print_data_width_prefix(f, vsew * rd_data_multiplier)
-        print("0x5201314", file=f)
-
-    print("\nrd_data_int:", file=f)
-    for i in range(test_num_tuple[1] * num_elem):
-        print_data_width_prefix(f, vsew * rd_data_multiplier)
-        print("0x5201314", file=f)
 
     print_mask_origin_data_ending(f, num_elem)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_compute(test_num_tuple, rd_data_multiplier)
+    arr = gen_arr_compute(test_num_tuple)
     print_rvmodel_data(arr, f)
 
 
