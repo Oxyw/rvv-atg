@@ -54,7 +54,7 @@ def create_first_test_vfwmsac(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_
     num_tests_tuple = generate_tests_vfwmacc(instr, f, vsew, lmul, rs1_val, rs2_val)
 
     # Common const information
-    print_common_ending_rs1rs2rd_widen(rs1_val, rs2_val, num_tests_tuple, vsew, f)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

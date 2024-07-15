@@ -48,7 +48,7 @@ def create_first_test_vnsra(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     num_tests_tuple = generate_tests_nvvnvxnvi(instr, f, rs1_val, rs2_val, lmul)
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, num_tests_tuple, vsew, f, rs2_data_multiplier = 2)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f, rs2_data_multiplier = 2)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

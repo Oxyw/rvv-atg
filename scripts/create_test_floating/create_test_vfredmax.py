@@ -47,7 +47,7 @@ def create_first_test_vfredmax(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     n = generate_tests_vfred(instr, f, vsew, lmul, rs1_val, rs2_val, suffix="vs")
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvfrv(rs1_val, rs2_val, (n, 0, 0), vsew, f, generate_vv = False, generate_vf = False, generate_rv = False, is_reduction=True)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, (n, 0, 0), vsew, f, is_reduction=True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

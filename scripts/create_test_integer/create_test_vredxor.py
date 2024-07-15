@@ -48,7 +48,7 @@ def create_first_test_vredxor(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_
     n = generate_tests_vred(instr, f, rs1_val, rs2_val, lmul)
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, (n, 0, 0), vsew, f, generate_vi = False, generate_vx = False, generate_vv = False, is_reduction = True)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, (n, 0, 0), vsew, f, is_reduction = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

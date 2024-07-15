@@ -48,7 +48,7 @@ def create_first_test_vsbc(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pat
     num_tests_tuple = generate_tests_vvvxvim(instr, f, rs1_val, rs2_val, lmul, generate_vi=False)
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, num_tests_tuple, vsew, f, generate_vi=False)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

@@ -1331,8 +1331,6 @@ def generate_tests_vvmvxmvim(instr, f, rs1_val, rs2_val, lmul, generate_vv=True,
     vi_test_num = n - vv_test_num - vx_test_num
     return (vv_test_num, vx_test_num, vi_test_num)
 
-def print_common_ending_rs1rs2rd(rs1_val, rs2_val, f):
-    print("")
 
 def generate_tests_nvvnvxnvi(instr, f, rs1_val, rs2_val, lmul):
     lmul_1 = 1 if lmul < 1 else int(lmul)

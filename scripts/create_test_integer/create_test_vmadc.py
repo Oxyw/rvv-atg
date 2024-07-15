@@ -48,7 +48,7 @@ def create_first_test_vmadc(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     tuples = generate_tests_vmadc(instr, f, rs1_val, rs2_val, lmul, vsew)
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, tuples, vsew, f)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, tuples, vsew, f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

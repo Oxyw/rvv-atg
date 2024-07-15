@@ -189,7 +189,7 @@ def create_empty_test_vrgather(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     num_tests_tuple = generate_tests(f, rs1_val, rs2_val, lmul)
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvxvi(rs1_val, rs2_val, num_tests_tuple, vsew, f)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

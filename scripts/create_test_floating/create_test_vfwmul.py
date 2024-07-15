@@ -47,7 +47,7 @@ def create_first_test_vfwmul(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_p
     num_tests_tuple = generate_tests_widen(instr, f, vsew, lmul, rs1_val, rs2_val, test_wvwf = False)
 
     # Common const information
-    print_common_ending_rs1rs2rd_widen(rs1_val, rs2_val, num_tests_tuple, vsew, f)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

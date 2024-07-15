@@ -46,7 +46,7 @@ def create_first_test_vfrsqrt7(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     num_tests_tuple = generate_tests_v_op(instr, f, lmul, rs1_val, rs2_val)
 
     # Common const information
-    print_common_ending_rs1rs2rd_vvvfrv(rs1_val, rs2_val, num_tests_tuple, vsew, f, generate_vf = False)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
