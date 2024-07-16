@@ -49,6 +49,23 @@
     and targetreg, targetreg, x2; \
 
 
+#define TEST_CASE_XREG( testnum, testreg, code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li TESTNUM, testnum; \
+    RVTEST_SIGUPD(x20, testreg);
+  
+#define TEST_CASE_FPREG( testnum, testreg, code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li TESTNUM, testnum; \
+    frflags a1; \
+    RVTEST_SIGUPD_F(x20, testreg, a1);
+
+
+
 #define TEST_CASE( testnum, testreg, code... ) \
 test_ ## testnum: \
     code; \
@@ -344,20 +361,3 @@ test_ ## testnum: \
     vmseq.vi v0, v8, 1; \
     inst v16, v0.t; \
   )
-
-
-#define TEST_CASE_XREG( testnum, testreg, code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    RVTEST_SIGUPD(x20, testreg);
-  
-#define TEST_CASE_FPREG( testnum, testreg, code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    frflags a1; \
-    RVTEST_SIGUPD_F(x20, testreg, a1);
-
