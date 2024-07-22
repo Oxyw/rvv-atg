@@ -42,7 +42,7 @@ def create_first_test_vwmaccus(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vwmacc(f, lmul)
+    generate_macros_vwmacc(f, lmul, generate_vv=False)
 
     # Generate tests
     num_tests_tuple = generate_tests_vwmacc(f, rs1_val, rs2_val, instr, lmul, generate_vv=False)

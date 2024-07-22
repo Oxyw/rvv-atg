@@ -11,11 +11,24 @@ def get_mask_bit(index):
 
 def get_aligned_reg(reg, lmul_reg, lmul_target):
     for i in range(1, 32):
-        if i % lmul_target != 0:
+        if i % lmul_target != 0 or i == reg:
             continue
         if (i > reg + lmul_reg - 1) or (i + lmul_target - 1 < reg):
             return i
     return 0
+
+def get_aligned_regs(reg, lmul_reg, lmul_target1, lmul_target2):
+    for i in range(1, 32):
+        if i % lmul_target1 != 0 or i == reg:
+            continue
+        for j in range(1, 32):
+            if j % lmul_target2 != 0 or j == reg or i == j:
+                continue
+            if ((i > reg + lmul_reg - 1) or (i + lmul_target1 - 1 < reg)) and \
+               ((j > reg + lmul_reg - 1) or (j + lmul_target2 - 1 < reg)) and \
+               ((i + lmul_target1 - 1 < j or j + lmul_target2 - 1 < i)):
+                return (i, j)
+    return (0, 0)
 
 
 def valid_aligned_regs(reg):
@@ -154,14 +167,16 @@ def gen_arr_load(n):
     arr = [0, int(vlen * lmul / vsew) * n + xfvcsr_num * n, 0]
     return arr
 
-def gen_arr_compute(test_num_tuple, is_reduction = False):
+def gen_arr_compute(test_num_tuple, is_reduction = False, is_mask = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    
     test_num = sum(test_num_tuple)
-    result_num = 1 if is_reduction else int(vlen * lmul / vsew)
+    elem_num = int(vlen * lmul / vsew)
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    arr = [0, result_num * test_num + xfvcsr_num * test_num, 0]
+    result_num = test_num if is_reduction else elem_num * test_num
+    arr = [0, result_num + xfvcsr_num * test_num, 0]
     return arr
 
 
@@ -498,7 +513,7 @@ def print_origin_data_ending(f):
         print(".word\t%s"%rd_origin_data[i], file=f)
 
 
-def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_date_widen = False, is_reduction = False):
+def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_date_widen = False, is_reduction = False, is_mask = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     num_elem = int(vlen * lmul / vsew)
@@ -545,11 +560,11 @@ def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_compute(test_num_tuple, is_reduction=is_reduction)
+    arr = gen_arr_compute(test_num_tuple, is_reduction=is_reduction, is_mask=is_mask)
     print_rvmodel_data(arr, f)
 
 
-def print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs1_int_val, test_num_tuple, vsew, f, is_widen = False, is_narrow = False):
+def print_common_ending_rs1rs2rd_vfcvt(rs_val, rs_int_val, test_num_tuple, vsew, f, is_widen = False, is_narrow = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     num_elem = int(vlen * lmul / vsew)
@@ -565,19 +580,19 @@ def print_common_ending_rs1rs2rd_vfcvt(rs1_val, rs1_int_val, test_num_tuple, vse
     TEST_DATA\n\
     \n\
     ", file=f)
-    rs1_data_multiplier = 2 if is_narrow else 1
+    rs_data_multiplier = 2 if is_narrow else 1
     rd_data_multiplier = 2 if is_widen else 1
-    print(".align %d"%(int(vsew * rs1_data_multiplier / 8)), file=f)
-    print("rs1_data:", file=f)
-    for i in range(len(rs1_val)):
-        print_data_width_prefix(f, vsew * rs1_data_multiplier)
-        print("%s"%rs1_val[i], file=f)
+    print(".align %d"%(int(vsew * rs_data_multiplier / 8)), file=f)
+    print("rs_data:", file=f)
+    for i in range(len(rs_val)):
+        print_data_width_prefix(f, vsew * rs_data_multiplier)
+        print("%s"%rs_val[i], file=f)
 
-    print(".align %d"%(int(vsew * rs1_data_multiplier / 8)), file=f)
-    print("rs1_data_int:", file=f)
-    for i in range(len(rs1_int_val)):
-        print_data_width_prefix(f, vsew * rs1_data_multiplier)
-        print("%s"%rs1_val[i], file=f)
+    print(".align %d"%(int(vsew * rs_data_multiplier / 8)), file=f)
+    print("rs_data_int:", file=f)
+    for i in range(len(rs_int_val)):
+        print_data_width_prefix(f, vsew * rs_data_multiplier)
+        print("%s"%rs_val[i], file=f)
 
     print_mask_origin_data_ending(f, num_elem)
     print("\n\

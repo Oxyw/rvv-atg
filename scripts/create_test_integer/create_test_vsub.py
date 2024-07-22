@@ -43,7 +43,7 @@ def create_first_test_vsub(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pat
     rs1_val, rs2_val = extract_operands(f, rpt_path)
     
     # Generate macros to test diffrent register
-    generate_macros_vvvxvi(f, lmul)
+    generate_macros_vvvxvi(f, lmul, generate_vi=False)
 
     # Generate tests
     vv_num_tests = generate_tests_vvvxvi(instr, f, rs1_val, rs2_val, lmul, generate_vi=False)

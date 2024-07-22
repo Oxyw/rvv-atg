@@ -1,8 +1,7 @@
 import logging
 import os
-from scripts.create_test_fixpoint.create_test_common import generate_macros_vnclip
 from scripts.test_common_info import *
-from scripts.create_test_integer.create_test_common import  generate_macros_vmadc, generate_tests_vmadc
+from scripts.create_test_integer.create_test_common import  generate_macros_mask, generate_tests_mask
 import re
 
 instr = 'vmsbc'
@@ -44,10 +43,10 @@ def create_first_test_vmsbc(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vmadc(f, lmul)
+    generate_macros_mask(f, lmul, is_adc_sbc=True)
 
     # Generate tests
-    tuples = generate_tests_vmadc(instr, f, rs1_val, rs2_val, lmul, generate_vi = False)
+    tuples = generate_tests_mask(instr, f, rs1_val, rs2_val, lmul, generate_vi = False, is_adc_sbc=True)
 
     # Common const information
     print_common_ending_rs1rs2rd(rs1_val, rs2_val, tuples, vsew, f)

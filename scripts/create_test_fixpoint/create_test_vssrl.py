@@ -42,7 +42,7 @@ def create_first_test_vssrl(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros(f, lmul)
+    generate_macros(f, lmul, generate_vi=True)
 
     # Generate tests
     num_tests_tuple = generate_tests(f, rs1_val, rs2_val, instr, lmul, generate_vi=True)

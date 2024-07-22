@@ -49,7 +49,7 @@ def create_first_test_vwredsum(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     n = generate_tests_vwred(f, rs1_val, rs2_val, instr, lmul, instr_suffix='vs')
 
     # Common const information
-    print_common_ending_rs1rs2rd(rs1_val, rs2_val, (0, 0, n, 0), vsew, f, generate_date_widen=True, is_reduction=True)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, (0, 0, n, 0), vsew, f, rs2_data_multiplier = 2, is_reduction = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

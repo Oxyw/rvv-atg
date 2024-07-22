@@ -6,6 +6,7 @@ import re
 
 instr = 'vnclip'
 
+
 def create_empty_test_vnclip(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     logging.info("Creating empty test for {}".format(instr))
 

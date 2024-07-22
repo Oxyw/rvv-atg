@@ -1,6 +1,6 @@
 import logging
 import os
-from scripts.create_test_floating.create_test_common import generate_macros_vvmvfm, generate_tests_vvmvfm, print_ending
+from scripts.create_test_floating.create_test_common import generate_macros_compare, generate_tests_compare, print_ending
 from scripts.test_common_info import *
 import re
 
@@ -42,13 +42,13 @@ def create_first_test_vmfgt(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vvmvfm(f, lmul, test_vv = False)
+    generate_macros_compare(f, lmul, test_vv = False)
 
     # Generate macros to test diffrent register
-    num_tests_tuple = generate_tests_vvmvfm(instr, f, lmul, rs1_val, rs2_val, test_vv = False)
+    num_tests_tuple = generate_tests_compare(instr, f, lmul, rs1_val, rs2_val, test_vv = False)
 
     # Common const information
-    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f, is_mask = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import generate_fdat_seg
+from scripts.create_test_floating.create_test_common import generate_fdat_seg, print_ending
 import re
 
 instr = 'vfmv'
@@ -9,19 +9,9 @@ instr = 'vfmv'
 
 def generate_macros(f, vsew, lmul):
     for n in range(1, 32):
-        print("#define TEST_VFMVF_OP_rs_%d( testnum, base ) \\\n\
-        TEST_CASE_LOOP_FP( testnum, v24,  \\\n\
-            VSET_VSEW_4AVL \\\n\
-            la x7, rd_origin_data; \\\n\
-            vle%d.v v24, (x7); \\\n\
-            la a0, base; \\\n\
-            fl%s f%d, 0(a0); \\\n\
-            vfmv.v.f v24, f%d; \\\n\
-        )" % (n, vsew, "w" if vsew == 32 else "d", n, n), file=f)
-    for n in range(1, 32):
         if n % lmul != 0:
             continue
-        print("#define TEST_VFMVF_OP_rd_%d( testnum, base ) \\\n\
+        print("#define TEST_VFMV_VF_OP_vd_%d( testnum, base ) \\\n\
         TEST_CASE_LOOP_FP( testnum, v%d,  \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -31,7 +21,7 @@ def generate_macros(f, vsew, lmul):
             vfmv.v.f v%d, f7; \\\n\
         )" % (n, n, vsew, n, "w" if vsew == 32 else "d", n), file=f)
 
-    print("#define TEST_VFMVSF_OP( testnum, base )  \\\n\
+    print("#define TEST_VFMV_SF_OP( testnum, base )  \\\n\
     TEST_CASE_FP( testnum, v24,  \\\n\
         VSET_VSEW_4AVL \\\n\
         la x7, rd_origin_data; \\\n\
@@ -41,7 +31,9 @@ def generate_macros(f, vsew, lmul):
         vfmv.s.f v24, f7; \\\n\
     )" % (vsew, "w" if vsew == 32 else "d"), file=f)
     for n in range(1, 32):
-        print("#define TEST_VFMVFS_OP_rsrd_%d( testnum, base ) \\\n\
+        if n % lmul != 0:
+            continue
+        print("#define TEST_VFMV_FS_OP_vs_%d( testnum, base ) \\\n\
         TEST_CASE_FPREG( testnum, f8,  \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -53,7 +45,7 @@ def generate_macros(f, vsew, lmul):
         )" % (n, vsew, n, "w" if vsew == 32 else "d", n, n), file=f)
 
 
-def generate_tests(f, lmul, rs1_val, rs2_val):
+def generate_tests(f, lmul, rs1_val):
     n = 0
     print("  #-------------------------------------------------------------", file=f)
     print("  # vfmv.s.f Tests", file=f)
@@ -61,7 +53,7 @@ def generate_tests(f, lmul, rs1_val, rs2_val):
 
     for i in range(len(rs1_val)):
         n += 1
-        print("  TEST_VFMVSF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
+        print("  TEST_VFMV_SF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
 
     k = 0
     
@@ -73,7 +65,7 @@ def generate_tests(f, lmul, rs1_val, rs2_val):
         if i % lmul != 0:
             continue
         n += 1
-        print("  TEST_VFMVFS_OP_rsrd_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
+        print("  TEST_VFMV_FS_OP_vs_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
         k = (k + 1) % len(rs1_val)
     
     single_test_num = n
@@ -83,21 +75,17 @@ def generate_tests(f, lmul, rs1_val, rs2_val):
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(1, 32):
-        n += 1
-        print("  TEST_VFMVF_OP_rs_%d( " % i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
-        k = (k + 1) % len(rs1_val)
-        
         if i % lmul != 0:
             continue
         n += 1
-        print("  TEST_VFMVF_OP_rd_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
+        print("  TEST_VFMV_VF_OP_vd_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
         k = (k + 1) % len(rs1_val)
     
     loop_test_num = n - single_test_num
     return (single_test_num, loop_test_num)
 
 
-def print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, generate_data=False, rs1_val=None, rs2_val=None):
+def print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, rs1_val, rs2_val):
     print("  #endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -110,8 +98,7 @@ def print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, generate_data=False, 
     \n\
     ", file=f)
 
-    if generate_data:
-        generate_fdat_seg(f, rs1_val, rs2_val, vsew)
+    generate_fdat_seg(f, rs1_val, rs2_val, vsew)
     
     print_origin_data_ending(f)
 
@@ -134,7 +121,7 @@ def create_empty_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending_vfmv(f, vlen, vsew, lmul, (0,0), generate_data=False)
+    print_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -164,7 +151,7 @@ def create_first_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pat
     test_num_tuple = generate_tests(f, lmul, rs1_val, rs2_val)
 
     # Common const information
-    print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, generate_data = True, rs1_val = rs1_val, rs2_val = rs2_val)
+    print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, rs1_val, rs2_val)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

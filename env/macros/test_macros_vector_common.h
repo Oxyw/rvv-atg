@@ -82,14 +82,12 @@ test_ ## testnum: \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
 
 
+// TODO: save a mask register, not an element
 #define TEST_CASE_MASK_4VL( testnum, testreg,  code... ) \
 test_ ## testnum: \
     code; \
     XFVCSR_SIGUPD \
     li TESTNUM, testnum; \
-    VSET_VSEW_4AVL \
-    vpopc.m x14, testreg; \
-    VSET_VSEW \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
 
 #define TEST_CASE_SCALAR_SETVSEW_AFTER( testnum, testreg,  code... ) \
@@ -207,18 +205,6 @@ test_ ## testnum: \
     VSET_DOUBLE_VSEW \
     frflags a1; \
     VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-
-
-#define TEST_CASE_MASK_FP_4VL( testnum, testreg,  code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    VSET_VSEW_4AVL \
-    vpopc.m x14, testreg; \
-    VSET_VSEW \
-    frflags a1; \
-  VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
 
 
 

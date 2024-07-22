@@ -1,6 +1,6 @@
 import logging
 import os
-from scripts.create_test_integer.create_test_common import generate_macros_nvvnvxnvi, generate_tests_nvvnvxnvi
+from scripts.create_test_integer.create_test_common import generate_macros_vn, generate_tests_vn
 from scripts.test_common_info import *
 import re
 
@@ -41,10 +41,10 @@ def create_first_test_vnsrl(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_nvvnvxnvi(f, lmul)
+    generate_macros_vn(f, lmul)
 
     # Generate tests
-    num_tests_tuple = generate_tests_nvvnvxnvi(instr, f, rs1_val, rs2_val, lmul)
+    num_tests_tuple = generate_tests_vn(instr, f, rs1_val, rs2_val, lmul)
 
     # Common const information
     print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f, rs2_data_multiplier = 2)
