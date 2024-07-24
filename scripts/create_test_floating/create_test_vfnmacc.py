@@ -2,7 +2,7 @@ import logging
 import os
 from scripts.test_common_info import *
 import re
-from scripts.create_test_floating.create_test_common import generate_macros_vfmacc, generate_tests_vfmacc, print_ending
+from scripts.create_test_floating.create_test_common import generate_macros_vfmacc, generate_tests_vfmacc
 
 instr = 'vfnmacc'
 
@@ -17,7 +17,7 @@ def create_empty_test_vfnmacc(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending(f)
+    print_common_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

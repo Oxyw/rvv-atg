@@ -42,7 +42,8 @@ def valid_aligned_regs(reg):
 
 
 def print_rvmodel_data(arr, f):
-    print(" RVMODEL_DATA_BEGIN\n\
+    print("\n\
+    RVMODEL_DATA_BEGIN\n\
     \n\
     signature_x20_0:\n\
         .fill %d*(XLEN/32),4,0xdeadbeef\n\
@@ -144,7 +145,8 @@ def print_common_header(instr, f):
 
 
 def print_common_ending(f, arr=[0,0,0]):
-    print(" #endif\n\
+    print("\n\
+    #endif\n\
     \n\
     RVTEST_CODE_END\n\
     RVMODEL_HALT\n\
@@ -179,24 +181,6 @@ def gen_arr_compute(test_num_tuple, is_reduction = False, is_mask = False):
     arr = [0, result_num + xfvcsr_num * test_num, 0]
     return arr
 
-
-def print_common_withmask_ending(n, f, num_elem):
-    print(" #endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n", file=f)
-    print_mask_origin_data_ending(f, num_elem)
-    print("\
-        RVTEST_DATA_END\n\
-    \n", file=f)
-    arr = gen_arr_load(n)
-    print_rvmodel_data(arr, f)
 
 def extract_operands(f, rpt_path):
     rs1_val = []
@@ -458,15 +442,22 @@ def print_loadlr_ending(f, n = 0):
     arr = gen_arr_load(n)
     print_rvmodel_data(arr, f)
 
+
 def print_mask_origin_data_ending_fixed(f):
     # 24 words, mask_data + 0/64/128
     print_mask_data_ending_fixed(f)
     # 32 words, rd_origin_data + 0/64/128/192
-    print_origin_data_ending(f)
+    print_origin_data_ending_fixed(f)
 
-def print_mask_origin_data_ending(f, num_elem):
+def print_mask_origin_data_ending(f):
+    vlen = int(os.environ['RVV_ATG_VLEN'])
+    lmul = float(os.environ['RVV_ATG_LMUL'])
+    vsew = float(os.environ['RVV_ATG_VSEW'])
+    num_elem = int(vlen * lmul / vsew)
+    step_bytes = int(vlen * lmul / 8)
     print_mask_data_ending(f, num_elem)
-    print_origin_data_ending(f)
+    print_origin_data_ending(f, step_bytes)
+
 
 def print_mask_data_ending_fixed(f):
     print("\n.align 4", file=f)
@@ -504,22 +495,26 @@ def print_mask_data_ending(f, num_elem):
         print(".word\t%s"%'{:#08x}'.format(0x55555555), file=f)
     for i in range(num_words):
         print(".word\t%s"%'{:#08x}'.format(0xaaaaaaaa), file=f)
-    
-  
-def print_origin_data_ending(f):
+
+
+def print_origin_data_ending_fixed(f):
     print("\n.align 4", file=f)
     print("rd_origin_data:", file=f)
     for i in range(len(rd_origin_data)):
         print(".word\t%s"%rd_origin_data[i], file=f)
 
+def print_origin_data_ending(f, step_bytes):
+    word_num = math.ceil(step_bytes / 4)
+    print("\n.align 4", file=f)
+    print("rd_origin_data:", file=f)
+    for i in range(word_num):
+        print(".word\t0xdeadbeef", file=f)
+
 
 def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_date_widen = False, is_reduction = False, is_mask = False):
-    vlen = int(os.environ['RVV_ATG_VLEN'])
-    lmul = float(os.environ['RVV_ATG_LMUL'])
-    num_elem = int(vlen * lmul / vsew)
-
     print(test_num_tuple)
-    print("#endif\n\
+    print("\n\
+    #endif\n\
     \n\
     RVTEST_CODE_END\n\
     RVMODEL_HALT\n\
@@ -556,7 +551,7 @@ def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_
             print_data_width_prefix(f, vsew * rs2_data_multiplier * 2)
             print("%s"%rs1_val[i], file=f)
     
-    print_mask_origin_data_ending(f, num_elem)
+    print_mask_origin_data_ending(f)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
@@ -565,11 +560,8 @@ def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_
 
 
 def print_common_ending_rs1rs2rd_vfcvt(rs_val, rs_int_val, test_num_tuple, vsew, f, is_widen = False, is_narrow = False):
-    vlen = int(os.environ['RVV_ATG_VLEN'])
-    lmul = float(os.environ['RVV_ATG_LMUL'])
-    num_elem = int(vlen * lmul / vsew)
-
-    print("#endif\n\
+    print("\n\
+    #endif\n\
     \n\
     RVTEST_CODE_END\n\
     RVMODEL_HALT\n\
@@ -594,7 +586,7 @@ def print_common_ending_rs1rs2rd_vfcvt(rs_val, rs_int_val, test_num_tuple, vsew,
         print_data_width_prefix(f, vsew * rs_data_multiplier)
         print("%s"%rs_val[i], file=f)
 
-    print_mask_origin_data_ending(f, num_elem)
+    print_mask_origin_data_ending(f)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)

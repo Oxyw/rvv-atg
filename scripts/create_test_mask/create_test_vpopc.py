@@ -120,7 +120,7 @@ def print_ending_vpopc(vlen, vsew, f, n):
     ", file=f)
 
     generate_walking_data_seg_vpopc(f, vsew, vlen)
-    print_mask_origin_data_ending(f, num_elem)
+    print_mask_origin_data_ending(f)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)

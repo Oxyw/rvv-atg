@@ -1,6 +1,6 @@
 import logging
 import os
-from scripts.create_test_floating.create_test_common import generate_macros_compare, generate_tests_compare, print_ending
+from scripts.create_test_floating.create_test_common import generate_macros_compare, generate_tests_compare
 from scripts.test_common_info import *
 import re
 
@@ -18,7 +18,7 @@ def create_empty_test_vmflt(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending(f)
+    print_common_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

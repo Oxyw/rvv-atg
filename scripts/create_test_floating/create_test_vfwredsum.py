@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import print_ending, generate_macros_vfwred, generate_tests_vfwred
+from scripts.create_test_floating.create_test_common import generate_macros_vfwred, generate_tests_vfwred
 
 instr = 'vfwredsum'
 '''
@@ -23,7 +23,7 @@ def create_empty_test_vfwredsum(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending(f)
+    print_common_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

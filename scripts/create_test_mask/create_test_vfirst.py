@@ -126,7 +126,7 @@ def print_ending_vfirst(vlen, vsew, f, n):
     ", file=f)
 
     generate_walking_data_seg_vfirst(f, vsew, vlen)
-    print_mask_origin_data_ending(f, num_elem)
+    print_mask_origin_data_ending(f)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)

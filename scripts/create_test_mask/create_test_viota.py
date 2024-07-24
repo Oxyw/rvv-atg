@@ -186,7 +186,7 @@ def print_ending_viota(vlen, vsew, lmul, f, n):
 
     generate_walking_data_seg_common(int(vlen * lmul/vsew), int(vlen), int(vsew), f)
     #generate_walking_answer_seg_viota(int(vlen * lmul/vsew), int(vlen), int(vsew), f)
-    print_mask_origin_data_ending(f, int(vlen * lmul/vsew))
+    print_mask_origin_data_ending(f)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)

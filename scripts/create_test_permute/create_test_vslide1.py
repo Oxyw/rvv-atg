@@ -211,7 +211,7 @@ def print_ending_vslide(f, vlen, vsew, tuples):
     ", file=f)
 
     generate_dat_seg_vslide1(f, vsew)
-    print_mask_origin_data_ending(f, num_elem)
+    print_mask_origin_data_ending(f)
 
     print("\n\
     RVTEST_DATA_END\n", file=f)

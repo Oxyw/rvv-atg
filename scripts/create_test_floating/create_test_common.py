@@ -1423,28 +1423,3 @@ def generate_tests_vfcvt(instr, suffix_list, f, lmul, rs1_val, rs2_val, is_widen
             j = (j + 1) % mask_num
 
     return (n, 0, 0)
-
-
-def print_ending(f, generate_data = False, rs1_val = None, rs2_val = None, print_mask = False, num_elem = 0, test_tuples = (0,0,0)):
-    print("#endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n\
-    ", file=f)
-
-    if generate_data:
-        generate_fdat_seg(f, rs1_val, rs2_val)
-    
-    if print_mask:
-        print_mask_data_ending(f, num_elem)
-
-    print("\n\
-    RVTEST_DATA_END\n", file=f)
-    arr = gen_arr_compute(test_tuples)
-    print_rvmodel_data(arr, f)

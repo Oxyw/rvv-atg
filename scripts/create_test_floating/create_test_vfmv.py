@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import generate_fdat_seg, print_ending
+from scripts.create_test_floating.create_test_common import generate_fdat_seg
 import re
 
 instr = 'vfmv'
@@ -121,7 +121,7 @@ def create_empty_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):
 
 
     # Common const information
-    print_ending(f)
+    print_common_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

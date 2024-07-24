@@ -20,7 +20,7 @@ def create_empty_test_vwredsumu(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     
 
     # Common const information
-    print_common_withmask_ending(0, f, int(vlen * lmul / vsew))
+    print_common_ending(f)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
