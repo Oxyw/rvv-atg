@@ -4,10 +4,10 @@ from scripts.create_test_mask.create_test_common import *
 from scripts.test_common_info import *
 import re
 
-instr = 'vmandnot'
+instr = 'vmnor'
 
 
-def create_empty_test_vmandnot(xlen, vlen, vsew, lmul, vta, vma, output_dir):
+def create_empty_test_vmnor(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     logging.info("Creating empty test for {}".format(instr))
 
     path = "%s/%s_empty.S" % (output_dir, instr)

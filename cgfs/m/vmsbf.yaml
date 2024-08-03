@@ -3,8 +3,6 @@ vmsbf:
       - check ISA:=regex(.*V.*)
     opcode: 
       vmsbf.m: 0
-      vmsif.m: 0
-      vmsof.m: 0
     rs2: 
       <<: *v_regs
     rd: 

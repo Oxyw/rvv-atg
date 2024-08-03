@@ -617,7 +617,7 @@ def generate_macros_compare(f, lmul, test_vv = True):
     if test_vv:
         print("#undef TEST_M_FP_VV_OP \n\
     #define TEST_M_FP_VV_OP( testnum, inst, val2, val1, mask_addr ) \\\n\
-        TEST_CASE_MASK_4VL( testnum, v24,  \\\n\
+        TEST_CASE_VREG( testnum, v24,  \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v24, (x7);"%vsew + " \\\n\
@@ -632,7 +632,7 @@ def generate_macros_compare(f, lmul, test_vv = True):
             if n % lmul != 0:
                 continue
             print("#define TEST_M_FP_VV_OP_vs1_%d( testnum, inst, val2, val1, mask_addr )"%n + " \\\n\
-            TEST_CASE_MASK_4VL( testnum, v24,  \\\n\
+            TEST_CASE_VREG( testnum, v24,  \\\n\
                 VSET_VSEW_4AVL \\\n\
                 la x7, rd_origin_data; \\\n\
                 vle%d.v v24, (x7);"%vsew + " \\\n\
@@ -647,7 +647,7 @@ def generate_macros_compare(f, lmul, test_vv = True):
             # A vector mask occupies only one vector register regardless of SEW and LMUL.
             vs1, vs2 = valid_aligned_regs(n)
             print("#define TEST_M_FP_VV_OP_vd_%d( testnum, inst, val2, val1, mask_addr )"%n + " \\\n\
-            TEST_CASE_MASK_4VL( testnum, v%d,  "%n + "\\\n\
+            TEST_CASE_VREG( testnum, v%d,  "%n + "\\\n\
                 VSET_VSEW_4AVL \\\n\
                 %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
                 la x7, val1; \\\n\
@@ -660,7 +660,7 @@ def generate_macros_compare(f, lmul, test_vv = True):
     # always generrate vf
     print("#undef TEST_M_FP_VF_OP \n\
 #define TEST_M_FP_VF_OP( testnum, inst, val2, val1, mask_addr ) \\\n\
-    TEST_CASE_MASK_4VL( testnum, v24,  \\\n\
+    TEST_CASE_VREG( testnum, v24,  \\\n\
         VSET_VSEW_4AVL \\\n\
         la x7, rd_origin_data; \\\n\
         vle%d.v v24, (x7);"%vsew + " \\\n\
@@ -675,7 +675,7 @@ def generate_macros_compare(f, lmul, test_vv = True):
         if n % lmul != 0:
             continue
         print("#define TEST_M_FP_VF_OP_vs2_%d( testnum, inst, val2, val1, mask_addr ) "%n + " \\\n\
-        TEST_CASE_MASK_4VL( testnum, v24,   \\\n\
+        TEST_CASE_VREG( testnum, v24,   \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v24, (x7);"%vsew + " \\\n\
@@ -690,7 +690,7 @@ def generate_macros_compare(f, lmul, test_vv = True):
         # A vector mask occupies only one vector register regardless of SEW and LMUL.
         vs = 16 if n // 8 == 1 else 8
         print("#define TEST_M_FP_VF_OP_vd_%d( testnum, inst, val2, val1, mask_addr ) "%n + " \\\n\
-        TEST_CASE_MASK_4VL( testnum, v%d,  "%n + "\\\n\
+        TEST_CASE_VREG( testnum, v%d,  "%n + "\\\n\
             VSET_VSEW_4AVL \\\n\
             %s "%("la x7, mask_addr; \\\n    vlm.v v0, (x7); \\\n  "if masked else "")+" \
             la x7, val2; \\\n\

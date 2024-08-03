@@ -46,7 +46,7 @@ def print_rvmodel_data(arr, f):
     RVMODEL_DATA_BEGIN\n\
     \n\
     signature_x20_0:\n\
-        .fill %d*(XLEN/32),4,0xdeadbeef\n\
+        .fill %d*(XLEN/32)+%d*(VLEN/32),4,0xdeadbeef\n\
     \n\
     \n\
     #ifdef rvtest_mtrap_routine\n\
@@ -64,7 +64,7 @@ def print_rvmodel_data(arr, f):
     #endif\n\
     \n\
     RVMODEL_DATA_END\n\
-    "%(arr[1]), file=f)
+    "%(arr[1], arr[2]), file=f)
 
 def generate_idx_data(f):
     vlen = int(os.environ['RVV_ATG_VLEN'])
@@ -144,7 +144,7 @@ def print_common_header(instr, f):
     " % instr, file=f)
 
 
-def print_common_ending(f, arr=[0,0,0]):
+def print_common_ending(f, test_num = 0, print_data = False):
     print("\n\
     #endif\n\
     \n\
@@ -155,9 +155,16 @@ def print_common_ending(f, arr=[0,0,0]):
     RVTEST_DATA_BEGIN\n\
     \n\
     TEST_DATA\n\
-    \n\
+    \n", file=f)
+    
+    if print_data:
+        print_mask_origin_data_ending(f)
+    
+    print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
+    
+    arr = gen_arr_compute(test_num)
     print_rvmodel_data(arr, f)
 
 
@@ -174,11 +181,14 @@ def gen_arr_compute(test_num_tuple, is_reduction = False, is_mask = False):
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     
-    test_num = sum(test_num_tuple)
+    test_num = test_num_tuple if isinstance(test_num_tuple, int) else sum(test_num_tuple)
     elem_num = int(vlen * lmul / vsew)
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    result_num = test_num if is_reduction else elem_num * test_num
-    arr = [0, result_num + xfvcsr_num * test_num, 0]
+    if is_mask:
+        arr = [0, xfvcsr_num * test_num, test_num]
+    else:
+        result_num = test_num if is_reduction else elem_num * test_num
+        arr = [0, result_num + xfvcsr_num * test_num, 0]
     return arr
 
 
@@ -592,6 +602,5 @@ def print_common_ending_rs1rs2rd_vfcvt(rs_val, rs_int_val, test_num_tuple, vsew,
     \n", file=f)
     arr = gen_arr_compute(test_num_tuple)
     print_rvmodel_data(arr, f)
-
 
 

@@ -24,7 +24,7 @@ def run_spike(instr, rvv_atg_root,  output_dir, test_path, suffix, xlen, flen, v
         -I %s/env         \
         -I %s/env/spike         \
         -I %s/env/sail_cSim -mabi=lp64  \
-        %s -o ref_%s.elf -DTEST_CASE_1=True -DXLEN=%d -DFLEN=%d;" %(gcc, rvv_atg_root, rvv_atg_root, vsew, lmul, rvv_atg_root, rvv_atg_root, rvv_atg_root, rvv_atg_root, rvv_atg_root, test_path, suffix, xlen, flen)
+        %s -o ref_%s.elf -DTEST_CASE_1=True -DXLEN=%d -DFLEN=%d -DVLEN=%d;" %(gcc, rvv_atg_root, rvv_atg_root, vsew, lmul, rvv_atg_root, rvv_atg_root, rvv_atg_root, rvv_atg_root, rvv_atg_root, test_path, suffix, xlen, flen, vlen)
     
     print(gcc_string)
     os.system(gcc_string)

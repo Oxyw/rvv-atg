@@ -13,7 +13,7 @@ def create_empty_test_vmxnor(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     path = "%s/%s_empty.S" % (output_dir, instr)
     f = open(path, "w+")
 
-    generate_macros_common(f, lmul)
+    generate_macros_common(f)
 
     # Common header files
     print_common_header(instr, f)

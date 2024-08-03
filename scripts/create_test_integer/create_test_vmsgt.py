@@ -48,7 +48,7 @@ def create_first_test_vmsgt(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     num_tests_tuple = generate_tests_mask(instr, f, rs1_val, rs2_val, lmul, generate_vv=False)
 
     # Common const information
-    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f)
+    print_common_ending_rs1rs2rd(rs1_val, rs2_val, num_tests_tuple, vsew, f, is_mask = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

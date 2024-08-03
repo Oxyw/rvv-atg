@@ -1,3 +1,4 @@
+#define VREGWIDTH   (VLEN>>3)   // in units of #bytes
 #define TESTNUM gp
 #define RVTEST_VECTOR_ENABLE                                            \
   li a0, (MSTATUS_VS & (MSTATUS_VS >> 1)) |                             \
@@ -64,6 +65,14 @@ test_ ## testnum: \
     frflags a1; \
     RVTEST_SIGUPD_F(x20, testreg, a1);
 
+#define TEST_CASE_VREG( testnum, testreg, code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li TESTNUM, testnum; \
+    RVTEST_BASEUPD(x20); \
+    vs1r.v testreg, (x20); \
+    addi x20, x20, VREGWIDTH; \
 
 
 #define TEST_CASE( testnum, testreg, code... ) \
@@ -80,39 +89,6 @@ test_ ## testnum: \
     li TESTNUM, testnum; \
     VSET_DOUBLE_VSEW \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
-
-
-// TODO: save a mask register, not an element
-#define TEST_CASE_MASK_4VL( testnum, testreg,  code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    VECTOR_RVTEST_SIGUPD(x20, testreg);
-
-#define TEST_CASE_SCALAR_SETVSEW_AFTER( testnum, testreg,  code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    VSET_VSEW \
-    RVTEST_SIGUPD(x20, testreg);
-
-
-// For simplicity, all vlre/vsre test use 2 fields
-#define TEST_CASE_VLRE( testnum, eew, correctval1, correctval2, code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li x7, MASK_EEW(correctval1, eew); \
-    li x8, MASK_EEW(correctval2, eew); \
-    li TESTNUM, testnum; \
-    vsetivli x31, 1, MK_EEW(eew), tu, mu; \
-    VMVXS_AND_MASK_EEW( x14, v16, eew ) \
-    VMVXS_AND_MASK_EEW( x15, v17, eew ) \
-    VSET_VSEW \
-    VECTOR_RVTEST_SIGUPD(x20, v16); \
-    VECTOR_RVTEST_SIGUPD(x20, v17);
 
 #define TEST_CASE_LOOP( testnum, testreg, code...) \
 test_ ## testnum: \
@@ -157,6 +133,23 @@ test_ ## testnum: \
     addi x20, x20, -REGWIDTH; \
 
 
+#define TEST_CASE_FP( testnum, testreg,  code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li  TESTNUM, testnum; \
+    frflags a1; \
+    VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
+
+#define TEST_CASE_W_FP( testnum, testreg,  code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li  TESTNUM, testnum; \
+    VSET_DOUBLE_VSEW \
+    frflags a1; \
+    VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
+
 #define TEST_CASE_LOOP_FP( testnum, testreg,  code...) \
 test_ ## testnum: \
     code; \
@@ -189,23 +182,24 @@ test_ ## testnum: \
     addi x20, x20, -REGWIDTH; \
 
 
-#define TEST_CASE_FP( testnum, testreg,  code... ) \
+//-----------------------------------------------------------------------
+// Tests for Load Store instructions
+//-----------------------------------------------------------------------
+
+// For simplicity, all vlre/vsre test use 2 fields
+#define TEST_CASE_VLRE( testnum, eew, correctval1, correctval2, code... ) \
 test_ ## testnum: \
     code; \
     XFVCSR_SIGUPD \
-    li  TESTNUM, testnum; \
-    frflags a1; \
-    VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-
-#define TEST_CASE_W_FP( testnum, testreg,  code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li  TESTNUM, testnum; \
-    VSET_DOUBLE_VSEW \
-    frflags a1; \
-    VECTOR_RVTEST_SIGUPD_F(x20, testreg, a1); \
-
+    li x7, MASK_EEW(correctval1, eew); \
+    li x8, MASK_EEW(correctval2, eew); \
+    li TESTNUM, testnum; \
+    vsetivli x31, 1, MK_EEW(eew), tu, mu; \
+    VMVXS_AND_MASK_EEW( x14, v16, eew ) \
+    VMVXS_AND_MASK_EEW( x15, v17, eew ) \
+    VSET_VSEW \
+    VECTOR_RVTEST_SIGUPD(x20, v16); \
+    VECTOR_RVTEST_SIGUPD(x20, v17);
 
 
 #define TEST_VLSE_OP( testnum, inst, eew, result1, result2, stride, base ) \
@@ -303,47 +297,4 @@ test_ ## testnum: \
     VSET_VSEW \
     store_inst v8, (x1); \
     load_inst v16, (x1); \
-  )
-
-
-
-
-
-
-
-//-----------------------------------------------------------------------
-// Tests for Load Store instructions
-//-----------------------------------------------------------------------
-
-
-#define TEST_VMRL_OP( testnum, inst, sew,  src1_addr, src2_addr ) \
-  TEST_CASE_MASK_4VL( testnum, v24,  \
-    VSET_VSEW_4AVL \
-    la  x1, src1_addr; \
-    MK_VLE_INST(sew) v8, (x1); \
-    la  x1, src2_addr; \
-    MK_VLE_INST(sew) v16, (x1); \
-    vmseq.vi v1, v8, 1; \
-    vmseq.vi v2, v16, 1; \
-    inst v24, v2, v1; \
-    VSET_VSEW \
-  )
-
-#define TEST_VSFMB_OP( testnum, inst,  src1_addr ) \
-  TEST_CASE_MASK_4VL( testnum, v16,  \
-    VSET_VSEW_4AVL \
-    la  x1, src1_addr; \
-    vle8.v v8, (x1); \
-    vmseq.vi v1, v8, 1; \
-    inst v16, v1; \
-    VSET_VSEW \
-  )
-
-#define TEST_VID_OP( testnum, inst, src1_addr ) \
-  TEST_CASE_LOOP( testnum, v16, \
-    VSET_VSEW_4AVL \
-    la  x1, src1_addr; \
-    vle8.v v8, (x1); \
-    vmseq.vi v0, v8, 1; \
-    inst v16, v0.t; \
   )

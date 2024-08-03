@@ -130,11 +130,14 @@ from scripts.create_test_floating.create_test_vmfge import *
 from scripts.create_test_mask.create_test_vmand import *
 from scripts.create_test_mask.create_test_vmandnot import *
 from scripts.create_test_mask.create_test_vmnand import *
+from scripts.create_test_mask.create_test_vmnor import *
 from scripts.create_test_mask.create_test_vmor import *
 from scripts.create_test_mask.create_test_vmornot import *
 from scripts.create_test_mask.create_test_vmxnor import *
 from scripts.create_test_mask.create_test_vmxor import *
 from scripts.create_test_mask.create_test_vmsbf import *
+from scripts.create_test_mask.create_test_vmsif import *
+from scripts.create_test_mask.create_test_vmsof import *
 from scripts.create_test_mask.create_test_vid import *
 from scripts.create_test_mask.create_test_viota import *
 from scripts.create_test_mask.create_test_vpopc import *

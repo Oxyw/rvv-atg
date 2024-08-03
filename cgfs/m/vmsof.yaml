@@ -1,10 +1,12 @@
-vid:
+vmsbf:
     config:
       - check ISA:=regex(.*V.*)
     opcode: 
-      vid.v: 0
+      vmsof.m: 0
+    rs2: 
+      <<: *v_regs
     rd: 
       <<: *v_regs
     val_comb:
       abstract_comb:
-        <<: [*rs1val_walking_mask]
+        <<: [*rs2val_walking_mask]
