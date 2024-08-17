@@ -1,4 +1,4 @@
-vfslide:
+vfslide1:
     config: 
       - check ISA:=regex(.*V.*)
     opcode: 
@@ -10,3 +10,6 @@ vfslide:
       <<: *v_regs
     rd: 
       <<: *v_regs
+    val_comb:
+      abstract_comb:
+        'ibm_b1(vsew, vsew, "vfadd", 2, rvv_sew = vsew)': 0

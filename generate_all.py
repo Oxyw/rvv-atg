@@ -26,7 +26,7 @@ floatingpoint = ['vfadd', 'vfclass', 'vfdiv', 'vfmacc', 'vfmadd', 'vfmax', 'vfme
 floatingpoint_short = ['vfadd', 'vfmacc', 'vfmerge', 'vfmv', 'vfcvt', 'vfredosum',  'vfwadd', 'vfwnmacc', 'vfwredsum']
 floatingpoint_widen_short = ['vfwadd', 'vfwnmacc', 'vfwredsum']
 
-permute = ['vmre', 'vmv', 'vrgather', 'vrgatherei16',  'vcompress', 'vfslide', 'vslide', 'vslide1']
+permute = ['vmvnr', 'vmv', 'vrgather', 'vrgatherei16',  'vcompress', 'vfslide1', 'vslide', 'vslide1']
 
 fixpoint = ['vaadd', 'vaaddu', 'vasub', 'vasubu', 'vnclip', 'vnclipu', 'vsmul', 'vssra', 'vssrl']
 # For fast tests
@@ -62,7 +62,7 @@ def runcommand_fixpoint(ins):
 def runcommand_permute(ins):
     global vsew
     global lmul
-    if ins == "vfslide" and (vsew == 8 or vsew == 16):
+    if ins == "vfslide1" and (vsew == 8 or vsew == 16):
         return
     if ins == "vrgatherei16" and ((vsew == 8 and lmul_str == "8") or (vsew == 32 and lmul_str == "0.125") or (vsew == 64 and lmul_str == "0.125") or (vsew == 64 and lmul_str == "0.25")):
         return

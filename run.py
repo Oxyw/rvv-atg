@@ -117,6 +117,24 @@ def run_mask(cwd, args, cgf, output_dir):
         output_dir, empty_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
 
 
+def run_permutation(cwd, args, cgf, output_dir):
+    # 1. Create empty test file
+    empty_test = create_empty_test(
+        args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir)
+
+    # 2. Use empty tests to generate coverage report
+    (rpt_empty, isac_log_empty) = run_riscof_coverage(args.i, cwd, cgf,
+                                                      output_dir, empty_test, 'empty', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul,  tool=args.tool)
+
+    # 3. Generate test with not-filled result
+    first_test = create_first_test(
+        args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir, rpt_empty)
+
+    # 4. Run spike to generate commit info log for first test
+    spike_first_log = run_spike(args.i, cwd,
+        output_dir, first_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
+
+
 def run_loadstore(cwd, args, cgf, output_dir):
     # 1. Create empty test file
     empty_test = create_empty_test(
@@ -181,8 +199,10 @@ def main():
         run_vf(cwd, args, cgf, output_dir)
     elif args.t == "i" or args.t == "x":
         run_integer(cwd, args, cgf,  output_dir)
-    elif args.t == "m" or args.t == "p":
+    elif args.t == "m":
         run_mask(cwd, args, cgf, output_dir)
+    elif args.t == "p":
+        run_permutation(cwd, args, cgf, output_dir)
     elif args.t == "l":
         # TODO: new load store
         # if args.i in ["vlssege8", "vlssege16", "vlssege32", "vlssege64"]:

@@ -1,48 +1,11 @@
-from glob import glob
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_permute.const_data import *
+from scripts.create_test_permute.create_test_common import print_ending_mv
 import re
 import math
 
 instr = 'vmv'
-
-def extract_operands():
-    val_10 = list(set(coverpoints_16) | set(coverpoints_32) | set(coverpoints_64))
-    val = ['{:#016x}'.format(int(x) & 0xffffffffffffffff)
-            for x in val_10]
-    return val
-
-
-def print_ending_vmv(f, val, test_num_tuple, vlen, vsew, lmul):
-    print("  #endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n\
-    ", file=f)
-
-    print(".align %d"%(int(vsew / 8)), file=f)
-    print("rs_data:", file=f)
-
-    for i in range(len(val)):
-        print_data_width_prefix(f, vsew)
-        print("%s"%val[i], file=f)
-
-    print_origin_data_ending(f)
-
-    print("\n\
-    RVTEST_DATA_END\n", file=f)
-    num_elem = int(vlen * lmul / vsew)
-    num_tests = test_num_tuple[0] + test_num_tuple[1]
-    xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    print_rvmodel_data([0, (test_num_tuple[0] + num_elem * test_num_tuple[1]) + xfvcsr_num * num_tests, 0], f)
 
 
 def generate_macros(f, vsew, lmul):
@@ -54,8 +17,8 @@ def generate_macros(f, vsew, lmul):
         li x7, MASK_VSEW(result); \\\n\
         vmv.s.x v24, x7; \\\n\
     )", file=f)
-    for n in range(1,32):
-        print("#define TEST_VMVXS_OP_rsrd_%d( testnum, result )"%n + " \\\n\
+    for n in range(1, 32):
+        print("#define TEST_VMVXS_OP_%d( testnum, result )"%n + " \\\n\
         TEST_CASE_XREG( testnum, x8,  \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -70,7 +33,7 @@ def generate_macros(f, vsew, lmul):
         if n % lmul != 0:
             continue
         vs = 16 if n == 8 else 8   # v8 as vs
-        print("#define TEST_VMVVV_OP_vd%d( testnum, val )"%n + " \\\n\
+        print("#define TEST_VMVVV_OP_vd_%d( testnum, val )"%n + " \\\n\
         TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -79,12 +42,12 @@ def generate_macros(f, vsew, lmul):
             vle%d.v v%d, (x7);"%(vsew, vs) + " \\\n\
             vmv.v.v v%d, v%d;"%(n, vs)+" \\\n\
         )", file=f)
-    for n in range(1,32):
+    for n in range(1, 32):
         if n % lmul != 0:
             continue
         vd = 16 if n == 24 else 24  # v24 as vd
-        print("#define TEST_VMVVV_OP_vs%d( testnum, val )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
+        print("#define TEST_VMVVV_OP_vs_%d( testnum, val )"%n + " \\\n\
+        TEST_CASE_LOOP( testnum, v%d, "%vd + " \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
             vle%d.v v%d, (x7);"%(vsew, vd) + " \\\n\
@@ -92,8 +55,9 @@ def generate_macros(f, vsew, lmul):
             vle%d.v v%d, (x7);"%(vsew, n) + " \\\n\
             vmv.v.v v%d, v%d;"%(vd, n)+" \\\n\
         )", file=f)
-    for n in range(1,32):
-        print("#define TEST_VMVVX_OP_vd%d( testnum, val )"%n + " \\\n\
+    
+    for n in range(1, 32):
+        print("#define TEST_VMVVX_OP_vd_%d( testnum, val )"%n + " \\\n\
         TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -101,8 +65,8 @@ def generate_macros(f, vsew, lmul):
             li x1, MASK_XLEN(val); \\\n\
             vmv.v.x v%d, x1;"%(n)+" \\\n\
         )", file=f)
-    for n in range(1,32):
-        print("#define TEST_VMVVI_OP_vd%d( testnum, val )"%n + " \\\n\
+    for n in range(1, 32):
+        print("#define TEST_VMVVI_OP_vd_%d( testnum, val )"%n + " \\\n\
         TEST_CASE_LOOP( testnum, v%d, "%n + " \\\n\
             VSET_VSEW_4AVL \\\n\
             la x7, rd_origin_data; \\\n\
@@ -112,11 +76,11 @@ def generate_macros(f, vsew, lmul):
 
 
 def generate_tests(f, val, vlen, vsew, lmul):
-    num_elem = int((vlen * lmul / vsew))
+    num_elem = int(vlen * lmul / vsew)
     if num_elem == 0:
         return 0
     
-    loop_num = math.ceil(len(val) / num_elem)
+    loop_num = int(len(val) / num_elem)
     step_bytes = int(vlen * lmul / 8)
 
     n = 0
@@ -138,7 +102,7 @@ def generate_tests(f, val, vlen, vsew, lmul):
         if i % lmul != 0:
             continue
         n += 1
-        print("  TEST_VMVXS_OP_rsrd_%d( "%i+str(n)+", "+str(val[i % len(val)])+" );",file=f)
+        print("  TEST_VMVXS_OP_%d( "%i+str(n)+", "+str(val[i % len(val)])+" );",file=f)
     
     single_test_num = n
     
@@ -146,15 +110,14 @@ def generate_tests(f, val, vlen, vsew, lmul):
     print("  # VMVVV Tests",file=f)
     print("  #-------------------------------------------------------------",file=f)
     
-    for i in range(min(32, loop_num)):
-        k = i % 31 + 1
-        if k % lmul != 0:
+    for i in range(1, 32):
+        if i % lmul != 0:
             continue
+        k = i % loop_num
         n += 1
-        print("  TEST_VMVVV_OP_vd%d( "%k+str(n)+",  rs_data+%d );"%(i*step_bytes), file=f)
-
-        n +=1
-        print("  TEST_VMVVV_OP_vs%d( "%k+str(n)+",  rs_data+%d );"%(i*step_bytes), file=f)
+        print("  TEST_VMVVV_OP_vd_%d( "%i+str(n)+",  rs_data+%d );"%(k*step_bytes), file=f)
+        n += 1
+        print("  TEST_VMVVV_OP_vs_%d( "%i+str(n)+",  rs_data+%d );"%(k*step_bytes), file=f)
 
     print("  #-------------------------------------------------------------",file=f)
     print("  # VMVVX Tests",file=f)
@@ -163,7 +126,7 @@ def generate_tests(f, val, vlen, vsew, lmul):
     for i in range(1, 32):
         if i % lmul == 0:
             n += 1
-            print("  TEST_VMVVX_OP_vd%d( "%i+str(n)+",  %s );"%(val[i % len(val)]), file=f)
+            print("  TEST_VMVVX_OP_vd_%d( "%i+str(n)+",  %s );"%(val[i % len(val)]), file=f)
     
     print("  #-------------------------------------------------------------",file=f)
     print("  # VMVVI Tests",file=f)
@@ -172,13 +135,34 @@ def generate_tests(f, val, vlen, vsew, lmul):
     for i in range(1, 32):
         if i % lmul == 0:
             n += 1
-            print("  TEST_VMVVI_OP_vd%d( "%i+str(n)+",  14 );", file=f)
+            print("  TEST_VMVVI_OP_vd_%d( "%i+str(n)+",  14 );", file=f)
     
     loop_test_num = n - single_test_num
     return (single_test_num, loop_test_num)
 
 
 def create_empty_test_vmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):
+    logging.info("Creating empty test for {}".format(instr))
+
+    path = "%s/%s_empty.S" % (output_dir, instr)
+    f = open(path, "w+")
+
+    # Common header files
+    print_common_header(instr, f)
+
+    # Common const information
+    print_common_ending(f)
+    
+    f.close()
+    os.system("cp %s %s" % (path, output_dir))
+
+    logging.info(
+        "Creating empty test for {}: finish in {}!".format(instr, path))
+
+    return path
+
+
+def create_first_test_vmv(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
     logging.info("Creating first test for {}".format(instr))
 
     path = "%s/%s_first.S" % (output_dir, instr)
@@ -188,16 +172,16 @@ def create_empty_test_vmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     print_common_header(instr, f)
 
     # Extract operands
-    val = extract_operands()
+    rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
     generate_macros(f, vsew, lmul)
 
     # Generate tests
-    test_num_tuple = generate_tests(f, val, vlen, vsew, lmul)
+    test_num_tuple = generate_tests(f, rs1_val, vlen, vsew, lmul)
 
     # Common const information
-    print_ending_vmv(f, val, test_num_tuple , vlen, vsew, lmul)
+    print_ending_mv(f, rs1_val, test_num_tuple, vlen, vsew, lmul)
     
     f.close()
     os.system("cp %s %s" % (path, output_dir))

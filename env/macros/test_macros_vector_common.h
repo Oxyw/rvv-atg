@@ -74,6 +74,15 @@ test_ ## testnum: \
     vs1r.v testreg, (x20); \
     addi x20, x20, VREGWIDTH; \
 
+#define TEST_CASE_VREG_C( testnum, testreg, count, code... ) \
+test_ ## testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li TESTNUM, testnum; \
+    RVTEST_BASEUPD(x20); \
+    vs ## count ## r.v testreg, (x20); \
+    addi x20, x20, VREGWIDTH * count;
+
 
 #define TEST_CASE( testnum, testreg, code... ) \
 test_ ## testnum: \

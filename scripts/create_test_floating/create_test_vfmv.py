@@ -1,7 +1,7 @@
 import logging
 import os
 from scripts.test_common_info import *
-from scripts.create_test_floating.create_test_common import generate_fdat_seg
+from scripts.create_test_permute.create_test_common import print_ending_mv
 import re
 
 instr = 'vfmv'
@@ -53,7 +53,7 @@ def generate_tests(f, lmul, rs1_val):
 
     for i in range(len(rs1_val)):
         n += 1
-        print("  TEST_VFMV_SF_OP( " + str(n) + ",  fdat_rs1_" + str(i) + " );", file=f)
+        print("  TEST_VFMV_SF_OP( " + str(n) + ",  fdat_rs_" + str(i) + " );", file=f)
 
     k = 0
     
@@ -65,7 +65,7 @@ def generate_tests(f, lmul, rs1_val):
         if i % lmul != 0:
             continue
         n += 1
-        print("  TEST_VFMV_FS_OP_vs_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
+        print("  TEST_VFMV_FS_OP_vs_%d( " %i + str(n) + ",  fdat_rs_" + str(k) + " );", file=f)
         k = (k + 1) % len(rs1_val)
     
     single_test_num = n
@@ -78,36 +78,11 @@ def generate_tests(f, lmul, rs1_val):
         if i % lmul != 0:
             continue
         n += 1
-        print("  TEST_VFMV_VF_OP_vd_%d( " %i + str(n) + ",  fdat_rs1_" + str(k) + " );", file=f)
+        print("  TEST_VFMV_VF_OP_vd_%d( " %i + str(n) + ",  fdat_rs_" + str(k) + " );", file=f)
         k = (k + 1) % len(rs1_val)
     
     loop_test_num = n - single_test_num
     return (single_test_num, loop_test_num)
-
-
-def print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, rs1_val, rs2_val):
-    print("  #endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n\
-    ", file=f)
-
-    generate_fdat_seg(f, rs1_val, rs2_val, vsew)
-    
-    print_origin_data_ending(f)
-
-    print("\n\
-    RVTEST_DATA_END\n", file=f)
-    num_elem = int(vlen * lmul / vsew)
-    num_tests = test_num_tuple[0] + test_num_tuple[1]
-    xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    print_rvmodel_data([0, (test_num_tuple[0] + num_elem * test_num_tuple[1]) + xfvcsr_num * num_tests, 0], f)
 
 
 def create_empty_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir):
@@ -148,10 +123,10 @@ def create_first_test_vfmv(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pat
     generate_macros(f, vsew, lmul)
 
     # Generate tests
-    test_num_tuple = generate_tests(f, lmul, rs1_val, rs2_val)
+    test_num_tuple = generate_tests(f, lmul, rs1_val)
 
     # Common const information
-    print_ending_vfmv(f, vlen, vsew, lmul, test_num_tuple, rs1_val, rs2_val)
+    print_ending_mv(f, rs1_val, test_num_tuple, vlen, vsew, lmul, is_fp = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

@@ -42,7 +42,7 @@ def create_first_test_vfrdiv(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_p
     rs1_val, rs2_val = extract_operands_fp(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros(f, vsew, lmul)
+    generate_macros(f, vsew, lmul, test_vv = False, test_vf = True)
 
     # Generate macros to test diffrent register
     num_tests_tuple = generate_tests(instr, f, vsew, lmul, rs1_val, rs2_val, test_vv = False, test_vf = True)

@@ -192,25 +192,36 @@ def gen_arr_compute(test_num_tuple, is_reduction = False, is_mask = False):
     return arr
 
 
-def extract_operands(f, rpt_path):
-    rs1_val = []
-    rs2_val = []
-    f = open(rpt_path)
-    line = f.read()
-    matchObj = re.compile('rs1_val ?== ?(-?\d+)')
-    rs1_val_10 = matchObj.findall(line)
-    rs1_val = ['{:#016x}'.format(int(x) & 0xffffffffffffffff)
-               for x in rs1_val_10]
-    matchObj = re.compile('rs2_val ?== ?(-?\d+)')
-    rs2_val_10 = matchObj.findall(line)
-    rs2_val = ['{:#016x}'.format(int(x) & 0xffffffffffffffff)
-               for x in rs2_val_10]
-    f.close()
-    
+def extract_operands(f, rpt_path, is_rs1_mask = False, is_rs2_mask = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = float(os.environ['RVV_ATG_VSEW'])
     num_elem = int(vlen * lmul / vsew)
+    
+    rs1_val = []
+    rs2_val = []
+    f = open(rpt_path)
+    line = f.read()
+    
+    matchObj = re.compile('rs1_val ?== ?(-?\d+)')
+    rs1_val_10 = matchObj.findall(line)
+    if is_rs1_mask: # No '0x' prefix
+        rs1_val = [hex(int(x))[2:].zfill(8 * math.ceil(num_elem / 32)) # num_elem bits, num_elem/32 words
+                   for x in rs1_val_10]
+    else:
+        rs1_val = ['{:#016x}'.format(int(x) & 0xffffffffffffffff)
+                   for x in rs1_val_10]
+    
+    matchObj = re.compile('rs2_val ?== ?(-?\d+)')
+    rs2_val_10 = matchObj.findall(line)
+    if is_rs2_mask: # No '0x' prefix
+        rs2_val = [hex(int(x))[2:].zfill(8 * math.ceil(num_elem / 32)) # num_elem bits, num_elem/32 words
+                   for x in rs2_val_10]
+    else:
+        rs2_val = ['{:#016x}'.format(int(x) & 0xffffffffffffffff)
+                    for x in rs2_val_10]
+    f.close()
+    
     loop_num = int(min(len(rs1_val), len(rs2_val)) / num_elem)
     while loop_num == 0 and len(rs1_val) > 0 and len(rs2_val) > 0:
         print(len(rs1_val), len(rs2_val), num_elem, loop_num)
@@ -521,7 +532,7 @@ def print_origin_data_ending(f, step_bytes):
         print(".word\t0xdeadbeef", file=f)
 
 
-def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_date_widen = False, is_reduction = False, is_mask = False):
+def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_data_multiplier = 1, rs2_data_multiplier = 1, rd_data_multiplier = 1, generate_date_widen = False, is_reduction = False, is_mask = False, is_rs1_mask = False, is_rs2_mask = False):
     print(test_num_tuple)
     print("\n\
     #endif\n\
@@ -535,31 +546,50 @@ def print_common_ending_rs1rs2rd(rs1_val, rs2_val, test_num_tuple, vsew, f, rs1_
     TEST_DATA\n\
     \n\
     ", file=f)
-    print(".align %d"%(int(vsew * rs1_data_multiplier / 8)), file=f)
-    print("rs1_data:", file=f)
-    for i in range(len(rs1_val)):
-        print_data_width_prefix(f, vsew * rs1_data_multiplier)
-        print("%s"%rs1_val[i], file=f)
     
-    if generate_date_widen:
-        print(".align %d"%(int(vsew * rs1_data_multiplier * 2 / 8)), file=f)
-        print("rs1_data_widen:", file=f)
+    if is_rs1_mask:
+        print(".align 4", file=f)
+        print("rs1_data:", file=f)
+        for hex_str in rs1_val:
+            hex_str = hex_str[2:] if hex_str.startswith('0x') else hex_str
+            words = [hex_str[i:i+8] for i in range(0, len(hex_str), 8)]
+            words.reverse()
+            for word in words:
+                print(".word\t0x%s" % word, file=f)
+    else:
+        print(".align %d"%(int(vsew * rs1_data_multiplier / 8)), file=f)
+        print("rs1_data:", file=f)
         for i in range(len(rs1_val)):
-            print_data_width_prefix(f, vsew * rs1_data_multiplier * 2)
+            print_data_width_prefix(f, vsew * rs1_data_multiplier)
             print("%s"%rs1_val[i], file=f)
+        if generate_date_widen:
+            print(".align %d"%(int(vsew * rs1_data_multiplier * 2 / 8)), file=f)
+            print("rs1_data_widen:", file=f)
+            for i in range(len(rs1_val)):
+                print_data_width_prefix(f, vsew * rs1_data_multiplier * 2)
+                print("%s"%rs1_val[i], file=f)
     
-    print("\n.align %d"%(int(vsew * rs2_data_multiplier / 8)), file=f)
-    print("rs2_data:", file=f)
-    for i in range(len(rs2_val)):
-        print_data_width_prefix(f, vsew * rs2_data_multiplier)
-        print("%s"%rs2_val[i], file=f)
-
-    if generate_date_widen:
-        print(".align %d"%(int(vsew * rs1_data_multiplier * 2 / 8)), file=f)
-        print("rs2_data_widen:", file=f)
+    if is_rs2_mask:
+        print(".align 4", file=f)
+        print("rs2_data:", file=f)
+        for hex_str in rs2_val:
+            hex_str = hex_str[2:] if hex_str.startswith('0x') else hex_str
+            words = [hex_str[i:i+8] for i in range(0, len(hex_str), 8)]
+            words.reverse()
+            for word in words:
+                print(".word\t0x%s" % word, file=f)
+    else:
+        print("\n.align %d"%(int(vsew * rs2_data_multiplier / 8)), file=f)
+        print("rs2_data:", file=f)
         for i in range(len(rs2_val)):
-            print_data_width_prefix(f, vsew * rs2_data_multiplier * 2)
-            print("%s"%rs1_val[i], file=f)
+            print_data_width_prefix(f, vsew * rs2_data_multiplier)
+            print("%s"%rs2_val[i], file=f)
+        if generate_date_widen:
+            print(".align %d"%(int(vsew * rs1_data_multiplier * 2 / 8)), file=f)
+            print("rs2_data_widen:", file=f)
+            for i in range(len(rs2_val)):
+                print_data_width_prefix(f, vsew * rs2_data_multiplier * 2)
+                print("%s"%rs1_val[i], file=f)
     
     print_mask_origin_data_ending(f)
     print("\n\

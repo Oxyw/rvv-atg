@@ -3,7 +3,6 @@ vcompress:
       - check ISA:=regex(.*V.*)
     opcode: 
       vcompress.vm: 0
-      vslidedown.vi: 0
     rs1:
       <<: *v_regs
     rs2:
