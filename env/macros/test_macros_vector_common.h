@@ -65,16 +65,7 @@ test_ ## testnum: \
     frflags a1; \
     RVTEST_SIGUPD_F(x20, testreg, a1);
 
-#define TEST_CASE_VREG( testnum, testreg, code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li TESTNUM, testnum; \
-    RVTEST_BASEUPD(x20); \
-    vs1r.v testreg, (x20); \
-    addi x20, x20, VREGWIDTH; \
-
-#define TEST_CASE_VREG_C( testnum, testreg, count, code... ) \
+#define TEST_CASE_VREG( testnum, testreg, count, code... ) \
 test_ ## testnum: \
     code; \
     XFVCSR_SIGUPD \

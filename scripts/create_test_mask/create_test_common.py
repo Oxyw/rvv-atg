@@ -26,7 +26,7 @@ def generate_walking_data_seg_common(element_num, vlen, vsew, f):
 
 def generate_macros_common(f):
     print("#define TEST_VMRL_OP( testnum, inst, sew,  src1_addr, src2_addr ) \\\n\
-    TEST_CASE_VREG( testnum, v24,  \\\n\
+    TEST_CASE_VREG( testnum, v24, 1,  \\\n\
         VSET_VSEW_4AVL \\\n\
         la  x1, src1_addr; \\\n\
         MK_VLE_INST(sew) v8, (x1); \\\n\
@@ -38,7 +38,7 @@ def generate_macros_common(f):
     )", file=f)
     for n in range(1, 32):
         print("#define TEST_VMRL_OP_vs1_%d( testnum, inst, sew,  src1_addr, src2_addr ) \\\n\
-        TEST_CASE_VREG( testnum, v24,  \\\n\
+        TEST_CASE_VREG( testnum, v24, 1,  \\\n\
             VSET_VSEW_4AVL \\\n\
             la  x1, src1_addr; \\\n\
             MK_VLE_INST(sew) v8, (x1); \\\n\
@@ -51,7 +51,7 @@ def generate_macros_common(f):
     for n in range(1, 32):
         vs1, vs2 = valid_aligned_regs(n)
         print("#define TEST_VMRL_OP_vd_%d( testnum, inst, sew,  src1_addr, src2_addr ) \\\n\
-        TEST_CASE_VREG( testnum, v%d,  \\\n\
+        TEST_CASE_VREG( testnum, v%d, 1,  \\\n\
             VSET_VSEW_4AVL \\\n\
             la  x1, src1_addr; \\\n\
             MK_VLE_INST(sew) v8, (x1); \\\n\
@@ -187,7 +187,7 @@ def generate_macros_vs2(f, is_vd = True):
         for i in range(1, 32):
             vs2 = 16 if i == 8 else 8
             print("#define TEST_VDVS2_OP_vd_%d( testnum, inst,  src_addr, mask_addr )"%i + " \\\n\
-            TEST_CASE_VREG(testnum, v%d, "%i + " \\\n\
+            TEST_CASE_VREG(testnum, v%d, 1, "%i + " \\\n\
                 VSET_VSEW_4AVL \\\n\
                 la x7, rd_origin_data; \\\n\
                 vl1r.v v%d, (x7);"%i + " \\\n\

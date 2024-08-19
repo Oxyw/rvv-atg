@@ -16,7 +16,7 @@ def generate_macros_vmvnr(f, vsew, lmul):
         evl = emul * vlen / vsew
         
         print("#define TEST_VMV%dR_OP( testnum, inst,  src_base ) "%(nreg) + " \\\n\
-        TEST_CASE_VREG_C( testnum, v16, %d,  "%nreg + " \\\n\
+        TEST_CASE_VREG( testnum, v16, %d,  "%nreg + " \\\n\
             la x7, rd_origin_data; \\\n\
             vl%dre%d.v v16, (x7);"%(nreg, vsew) + " \\\n\
             la  x7, src_base; \\\n\
@@ -29,7 +29,7 @@ def generate_macros_vmvnr(f, vsew, lmul):
                 continue
             vs2 = 24 if n == 8 else 8
             print("#define TEST_VMV%dR_OP_vd_%d( testnum, inst,  src_base )"%(nreg, n) + " \\\n\
-            TEST_CASE_VREG_C( testnum, v%d, %d,  "%(n, nreg) + " \\\n\
+            TEST_CASE_VREG( testnum, v%d, %d,  "%(n, nreg) + " \\\n\
                 la x7, rd_origin_data; \\\n\
                 vl%dre%d.v v%d, (x7);"%(nreg, vsew, n) + " \\\n\
                 la  x7, src_base; \\\n\
@@ -41,7 +41,7 @@ def generate_macros_vmvnr(f, vsew, lmul):
                 continue
             vd = 24 if n == 16 else 16
             print("#define TEST_VMV%dR_OP_vs2_%d( testnum, inst,  src_base )"%(nreg, n) + " \\\n\
-            TEST_CASE_VREG_C( testnum, v%d, %d,  "%(vd, nreg) + " \\\n\
+            TEST_CASE_VREG( testnum, v%d, %d,  "%(vd, nreg) + " \\\n\
                 la x7, rd_origin_data; \\\n\
                 vl%dre%d.v v%d, (x7);"%(nreg, vsew, vd) + " \\\n\
                 la  x7, src_base; \\\n\
