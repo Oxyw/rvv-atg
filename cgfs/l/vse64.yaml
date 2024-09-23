@@ -1,0 +1,12 @@
+vse64:
+    config: 
+      - check ISA:=regex(.*V.*)
+    opcode: 
+      vse64.v: 0
+    rs1: 
+      <<: *all_regs_cropped
+    rd: 
+      <<: *v_octant_regs
+    val_comb:
+        'ea_align == 0': 0
+        'imm_val == 0': 0

@@ -47,7 +47,14 @@
 #define VMVXS_AND_MASK_EEW( targetreg, testreg, eew ) \
     vmv.x.s targetreg, testreg; \
     li x2, MASK_BITS(eew); \
-    and targetreg, targetreg, x2; \
+    and targetreg, targetreg, x2;
+
+
+#define TEST_CASE_FORMAT(testnum, code...) \
+test_##testnum: \
+    code; \
+    XFVCSR_SIGUPD \
+    li TESTNUM, testnum; \
 
 
 #define TEST_CASE_XREG( testnum, testreg, code... ) \
@@ -89,6 +96,24 @@ test_ ## testnum: \
     li TESTNUM, testnum; \
     VSET_DOUBLE_VSEW \
     VECTOR_RVTEST_SIGUPD(x20, testreg);
+
+
+#define TEST_CASE_LOOP_EEW(testnum, testreg, code...) \
+test_##testnum: \
+    VSET_VSEW_4AVL                                  \
+    code;                                           \
+    XFVCSR_SIGUPD                                   \
+    VSET_EEW_EMUL                                   \
+    csrr x31, vstart;                               \
+    csrr x30, vl;                                   \
+    li TESTNUM, testnum;                            \
+1 : VECTOR_RVTEST_SIGUPD(x20, testreg);             \
+    addi x20, x20, REGWIDTH;                        \
+    addi x31, x31, 1;                               \
+    vslidedown.vi testreg, testreg, 1;              \
+    bne x31, x30, 1b;                               \
+    addi x20, x20, -REGWIDTH;
+
 
 #define TEST_CASE_LOOP( testnum, testreg, code...) \
 test_ ## testnum: \
@@ -202,34 +227,6 @@ test_ ## testnum: \
     VECTOR_RVTEST_SIGUPD(x20, v17);
 
 
-#define TEST_VLSE_OP( testnum, inst, eew, result1, result2, stride, base ) \
-  TEST_CASE_LOOP( testnum, v16,  \
-    la  x1, base; \
-    li  x2, stride; \
-    inst v16, (x1), x2; \
-    VSET_VSEW \
-  )
-
-#define TEST_VLXEI_OP( testnum, inst, index_eew, result1, result2, base_data, base_index ) \
-  TEST_CASE_LOOP( testnum, v16, \
-    la  x1, base_data; \
-    la  x6, base_index; \
-    vsetvli x31, x0, MK_EEW(index_eew), tu, mu; \
-    MK_VLE_INST(index_eew) v8, (x6); \
-    VSET_VSEW_4AVL \
-    inst v16, (x1), v8; \
-    VSET_VSEW \
-  )
-
-#define TEST_VLE_OP( testnum, inst, eew, result1, result2, base ) \
-  TEST_CASE_LOOP( testnum, v16,  \
-    la  x1, base; \
-    inst v16, (x1); \
-    VSET_VSEW \
-  )
-
-
-
 #define TEST_VLRE2_OP( testnum, inst, eew, result1, result2, base ) \
   TEST_CASE_VLRE( testnum, eew, result1, result2,  \
     la  x1, base; \
@@ -242,39 +239,6 @@ test_ ## testnum: \
     inst v16, (x1); \
   )
 
-
-
-#define TEST_VSSE_OP( testnum, load_inst, store_inst, eew, result, stride, base ) \
-  TEST_CASE_LOOP( testnum, v16, \
-    la  x1, base; \
-    li  x2, stride; \
-    li  x3, result; \
-    vmv.v.x v8, x3; \
-    VSET_VSEW \
-    store_inst v8, (x1), x2; \
-    load_inst v16, (x1), x2; \
-  )
-
-#define TEST_VSE_OP( testnum, load_inst, store_inst, eew, result, base ) \
-  TEST_CASE_LOOP( testnum, v16, \
-    la  x1, base; \
-    li  x3, result; \
-    vmv.v.x v8, x3; \
-    VSET_VSEW \
-    store_inst v8, (x1); \
-    load_inst v16, (x1); \
-  )
-
-#define TEST_VSXEI_OP( testnum, load_inst, store_inst, index_eew, result, base_data, base_index ) \
-  TEST_CASE_LOOP( testnum, v16,  \
-    la  x1, base_data; \
-    la  x6, base_index; \
-    MK_VLE_INST(index_eew) v24, (x6); \
-    li  x3, result; \
-    vmv.v.x v8, x3; \
-    store_inst v8, (x1), v24; \
-    load_inst v16, (x1), v24; \
-  )
 
 #define TEST_VSRE2_OP( testnum, load_inst, store_inst, eew, result1, result2, base ) \
   TEST_CASE_VLRE( testnum, eew, result1, result2,  \

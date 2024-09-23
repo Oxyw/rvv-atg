@@ -1,6 +1,412 @@
-import re
+import os
+from scripts.test_common_info import get_aligned_reg
 
 
+sreg = "x20" # signature register
+
+def get_vset_eew_emul(eew, emul):
+    emul_map = {0.125: "f8", 0.25: "f4", 0.5: "f2", 1: "1", 2: "2", 4: "4", 8: "8"}
+    vset_string = "vsetvli x31, x0, e%d, m%s, tu, mu;"%(eew, emul_map[emul])
+    return vset_string
+
+
+def generate_macros_vle(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    print("#define TEST_VLE_OP( testnum, inst, base ) \\\n\
+    TEST_CASE_LOOP_EEW( testnum, v16, \\\n\
+        la  x7, base; \\\n\
+        inst v16, (x7); \\\n\
+    )", file=f)
+    for n in range(1, 32):
+        if n % emul != 0:
+            continue
+        print("#define TEST_VLE_OP_vd_%d( testnum, inst, base )"%n + " \\\n\
+        TEST_CASE_LOOP_EEW( testnum, v%d, "%n + " \\\n\
+            la  x8, base; \\\n\
+            inst v%d, (x8); "%n + "\\\n\
+        ) ", file=f)
+
+
+def generate_tests_vle(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    
+    n = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vle%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+
+    for i in range(2):
+        n += 1
+        print("  TEST_VLE_OP( "+str(n)+",  vle%d.v, " %(eew)+"0 + tdat"+" );", file=f)
+        n += 1
+        print("  TEST_VLE_OP( "+str(n)+",  vle%d.v, " %(eew)+"%d + tdat"%(eew//8)+" );", file=f)
+        n += 1
+        print("  TEST_VLE_OP( "+str(n)+",  vle%d.v, " %(eew)+"4096 + tdat"+" );", file=f)
+        n += 1
+        print("  TEST_VLE_OP( "+str(n)+",  vle%d.v, " %(eew)+"-4096 + tsdat9"+" );", file=f)
+        
+        n += 1
+        print("  TEST_VLE_OP( "+str(n)+",  vle%dff.v, " %(eew)+"0 + tdat"+" );", file=f)
+    
+    for i in range(1, 32):     
+        if i % emul != 0:
+            continue
+        n += 1
+        print("  TEST_VLE_OP_vd_%d( "%i+str(n)+",  vle%d.v, "%(eew)+"0 + tdat"+" );", file=f)
+        
+    return n
+
+
+def generate_macros_vse(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    vlen = int(os.environ['RVV_ATG_VLEN'])
+    xlen = int(os.environ['RVV_ATG_XLEN'])
+    num_bytes = max(xlen // 8, emul * vlen // 8) # TODO
+    
+    print("#define TEST_VSE_OP( testnum, load_inst, store_inst, base, sig_basereg ) \\\n\
+    TEST_CASE_FORMAT( testnum, \\\n\
+        la  x7, base; \\\n\
+        load_inst v8, (x7); \\\n\
+        RVTEST_BASEUPD(sig_basereg); \\\n\
+        store_inst v8, (sig_basereg); \\\n\
+        addi sig_basereg, sig_basereg, %d;"%(num_bytes) + " \\\n\
+    )", file=f)
+    for n in range(1, 32):
+        if n % emul != 0:
+            continue
+        print("#define TEST_VSE_OP_vs3_%d( testnum, load_inst, store_inst, base, sig_basereg )"%n + " \\\n\
+        TEST_CASE_FORMAT( testnum, \\\n\
+            la  x7, base;  \\\n\
+            load_inst v%d, (x7); "%n + " \\\n\
+            RVTEST_BASEUPD(sig_basereg); \\\n\
+            store_inst v%d, (sig_basereg); "%n + " \\\n\
+            addi sig_basereg, sig_basereg, %d;"%(num_bytes) + " \\\n\
+        )",file=f)
+
+
+def generate_tests_vse(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    
+    n = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vse%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+
+    for i in range(2):
+        n += 1
+        print("  TEST_VSE_OP( "+str(n)+", vle%d.v, vse%d.v, "%(eew, eew)+"0 + tdat, "+"%s );"%sreg, file=f)
+        n += 1
+        print("  TEST_VSE_OP( "+str(n)+", vle%d.v, vse%d.v, "%(eew, eew)+"4096 + tdat, "+"%s );"%sreg, file=f)
+    
+    for i in range(1, 32):     
+        if i % emul != 0:
+            continue
+        n += 1
+        print("  TEST_VSE_OP_vs3_%d( "%i+str(n)+", vle%d.v, vse%d.v, "%(eew, eew)+"0 + tdat, "+"%s );"%sreg, file=f)
+    
+    return n
+
+
+def generate_macros_vlse(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    print("#define TEST_VLSE_OP( testnum, inst, base, stride ) \\\n\
+    TEST_CASE_LOOP_EEW( testnum, v16,  \\\n\
+        la  x7, base; \\\n\
+        li  x8, stride; \\\n\
+        inst v16, (x7), x8; \\\n\
+    )", file=f)
+    for n in range(1, 32):
+        if n % emul != 0:
+            continue
+        print("#define TEST_VLSE_OP_vd_%d( testnum, inst, base, stride )"%n + " \\\n\
+        TEST_CASE_LOOP_EEW( testnum, v%d,  "%n + "\\\n\
+            la  x7, base; \\\n\
+            li  x8, stride; \\\n\
+            inst v%d, (x7), x8; "%n + "\\\n\
+        ) ", file=f)
+
+
+def generate_tests_vlse(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    
+    n = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vlse%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+
+    for i in range(2):
+        n += 1
+        print("  TEST_VLSE_OP( "+str(n)+",  vlse%d.v, "%(eew)+"0 + tdat, 0"+" );", file=f)
+        n += 1
+        print("  TEST_VLSE_OP( "+str(n)+",  vlse%d.v, "%(eew)+"0 + tdat, %d"%(eew//8)+" );", file=f)
+        n += 1
+        print("  TEST_VLSE_OP( "+str(n)+",  vlse%d.v, "%(eew)+"0 + tdat, 4096"+" );", file=f)
+        n += 1
+        print("  TEST_VLSE_OP( "+str(n)+",  vlse%d.v, "%(eew)+"0 + tsdat9, -4096"+" );", file=f)    
+    
+    for i in range(1, 32):     
+        if i % emul != 0:
+            continue
+        n += 1
+        print("  TEST_VLSE_OP_vd_%d( "%i+str(n)+",  vlse%d.v, "%(eew)+"0 + tdat, %d"%(eew//8)+" );", file=f)
+    
+    return n
+
+
+def generate_macros_vsse(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    print("#define TEST_VSSE_OP( testnum, load_inst, store_inst, base, stride ) \\\n\
+    TEST_CASE_LOOP_EEW( testnum, v16, \\\n\
+        la  x7, base; \\\n\
+        li  x8, stride; \\\n\
+        load_inst v8, (x7), x8; \\\n\
+        VSET_EEW_EMUL \\\n\
+        vadd.vi v8, v8, 1; \\\n\
+        VSET_VSEW_4AVL \\\n\
+        store_inst v8, (x7), x8; \\\n\
+        load_inst v16, (x7), x8; \\\n\
+    )", file=f)
+    for n in range(1, 32):
+        if n % emul != 0:
+            continue
+        print("#define TEST_VSSE_OP_vs3_%d( testnum, load_inst, store_inst, base, stride )"%n + " \\\n\
+        TEST_CASE_LOOP_EEW( testnum, v%d,  "%n + "\\\n\
+            la  x7, base; \\\n\
+            li  x8, stride; \\\n\
+            load_inst v%d, (x7), x8; "%n + "\\\n\
+            VSET_EEW_EMUL \\\n\
+            vadd.vi v%d, v%d, 1; "%(n, n) + "\\\n\
+            VSET_VSEW_4AVL \\\n\
+            store_inst v%d, (x7), x8; "%n + "\\\n\
+            load_inst v%d, (x7), x8; "%n + "\\\n\
+        )", file=f)
+
+
+def generate_tests_vsse(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    
+    n = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vsse%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+
+    for i in range(2):
+        n += 1
+        print("  TEST_VSSE_OP( "+str(n)+", vlse%d.v, vsse%d.v, "%(eew, eew)+"0 + tdat, 0"+" );", file=f)
+        n += 1
+        print("  TEST_VSSE_OP( "+str(n)+", vlse%d.v, vsse%d.v, "%(eew, eew)+"0 + tdat, %d"%(eew//8)+" );", file=f)
+        n += 1
+        print("  TEST_VSSE_OP( "+str(n)+", vlse%d.v, vsse%d.v, "%(eew, eew)+"0 + tdat, 4096"+" );", file=f)
+        n += 1
+        print("  TEST_VSSE_OP( "+str(n)+", vlse%d.v, vsse%d.v, "%(eew, eew)+"0 + tsdat9, -4096"+" );", file=f)
+    
+    for i in range(1, 32):     
+        if i % emul != 0:
+            continue
+        n += 1
+        print("  TEST_VSSE_OP_vs3_%d( "%i+str(n)+", vlse%d.v, vsse%d.v, "%(eew, eew)+"0 + tdat, %d"%(eew//8)+" );", file=f)
+    
+    return n
+
+
+def generate_macros_vlxei(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    print("#define TEST_VLXEI_OP( testnum, inst, index_eew, base_data, offset_base ) \\\n\
+    TEST_CASE_LOOP( testnum, v16,  \\\n\
+        VSET_VSEW_4AVL \\\n\
+        la  x7, base_data; \\\n\
+        la  x8, offset_base; \\\n\
+        MK_VLE_INST(index_eew) v8, (x8); \\\n\
+        inst v16, (x7), v8; \\\n\
+    )", file=f)
+    for n in range(1, 32):
+        if n % lmul != 0:
+            continue
+        vs2 = get_aligned_reg(n, lmul, emul)
+        if vs2 == 0:
+            continue
+        print("#define TEST_VLXEI_OP_vd_%d( testnum, inst, index_eew, base, offset_base )"%n + " \\\n\
+        TEST_CASE_LOOP( testnum, v%d, "%n + "\\\n\
+            VSET_VSEW_4AVL \\\n\
+            la  x7, base; \\\n\
+            la  x8, offset_base; \\\n\
+            MK_VLE_INST(index_eew) v%d, (x8); "%(vs2) + "\\\n\
+            inst v%d, (x7), v%d; "%(n, vs2) + "\\\n\
+        ) ", file=f)
+    for n in range(1, 32):
+        if n % emul != 0:
+            continue
+        vd = get_aligned_reg(n, emul, lmul)
+        if vd == 0:
+            continue
+        print("#define TEST_VLXEI_OP_vs2_%d( testnum, inst, index_eew, base, offset_base )"%n + " \\\n\
+        TEST_CASE_LOOP( testnum, v%d, "%vd + "\\\n\
+            VSET_VSEW_4AVL \\\n\
+            la  x7, base; \\\n\
+            la  x8, offset_base; \\\n\
+            MK_VLE_INST(index_eew) v%d, (x8); "%(n) + "\\\n\
+            inst v%d, (x7), v%d; "%(vd, n) + "\\\n\
+        ) ", file=f)
+
+
+def generate_tests_vlxei(f, instr, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    
+    n = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # %s Tests"%instr, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+
+    for i in range(2):
+        n += 1
+        print("  TEST_VLXEI_OP( "+str(n)+",  %s.v, %d, "%(instr, eew)+"0 + tdat"+", "+"idx%ddat"%eew+" );", file=f)
+        n += 1
+        print("  TEST_VLXEI_OP( "+str(n)+",  %s.v, %d, "%(instr, eew)+"%d + tdat"%(vsew//8)+", "+"idx%ddat"%eew+" );", file=f)
+        n += 1
+        print("  TEST_VLXEI_OP( "+str(n)+",  %s.v, %d, "%(instr, eew)+"4096 + tdat"+", "+"idx%ddat"%eew+" );", file=f)
+        n += 1
+        print("  TEST_VLXEI_OP( "+str(n)+",  %s.v, %d, "%(instr, eew)+"-4096 + tsdat9"+", "+"idx%ddat"%eew+" );", file=f)
+    
+    for i in range(1, 32):     
+        if i % lmul != 0 or get_aligned_reg(i, lmul, emul) == 0:
+            continue
+        n += 1
+        print("  TEST_VLXEI_OP_vd_%d( "%i+str(n)+",  %s.v, %d, "%(instr, eew)+"%d + tdat"%(vsew//8)+", "+"idx%ddat"%eew+" );", file=f)
+    
+    for i in range(1, 32):     
+        if i % emul != 0 or get_aligned_reg(i, emul, lmul) == 0:
+            continue
+        n += 1
+        print("  TEST_VLXEI_OP_vs2_%d( "%i+str(n)+",  %s.v, %d, "%(instr, eew)+"0 + tsdat1"+", "+"idx%ddat"%eew+" );", file=f)
+    
+    return n
+
+
+def generate_macros_vsxei(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    print("#define TEST_VSXEI_OP( testnum, load_inst, store_inst, index_eew, base, offset_base ) \\\n\
+    TEST_CASE_LOOP( testnum, v24, \\\n\
+        VSET_VSEW_4AVL \\\n\
+        la  x7, base; \\\n\
+        la  x8, offset_base; \\\n\
+        MK_VLE_INST(index_eew) v8, (x8); \\\n\
+        load_inst v16, (x7), v8; \\\n\
+        vadd.vi v16, v16, 1; \\\n\
+        store_inst v16, (x7), v8; \\\n\
+        load_inst v24, (x7), v8; \\\n\
+    )", file=f)
+    for n in range(1, 32):
+        if n % lmul != 0:
+            continue
+        vs2 = get_aligned_reg(n, lmul, emul)
+        if vs2 == 0:
+            continue
+        print("#define TEST_VSXEI_OP_vs3_%d( testnum, load_inst, store_inst, index_eew, base, offset_base )"%n + " \\\n\
+        TEST_CASE_LOOP( testnum, v%d, "%n + "\\\n\
+            VSET_VSEW_4AVL \\\n\
+            la  x7, base; \\\n\
+            la  x8, offset_base; \\\n\
+            MK_VLE_INST(index_eew) v%d, (x8); "%(vs2) + "\\\n\
+            load_inst v%d, (x7), v%d; "%(n, vs2) + "\\\n\
+            vadd.vi v%d, v%d, 1; "%(n, n) + "\\\n\
+            store_inst v%d, (x7), v%d; "%(n, vs2) + "\\\n\
+            load_inst v%d, (x7), v%d; "%(n, vs2) + "\\\n\
+        )",file=f)
+    for n in range(1, 32):
+        if n % emul != 0:
+            continue
+        vs3 = get_aligned_reg(n, emul, lmul)
+        if vs3 == 0:
+            continue
+        print("#define TEST_VSXEI_OP_vs2_%d( testnum, load_inst, store_inst, index_eew, base, offset_base )"%n + " \\\n\
+        TEST_CASE_LOOP( testnum, v%d, "%vs3 + "\\\n\
+            VSET_VSEW_4AVL \\\n\
+            la  x7, base; \\\n\
+            la  x8, offset_base; \\\n\
+            MK_VLE_INST(index_eew) v%d, (x8); "%(n) + "\\\n\
+            load_inst v%d, (x7), v%d; "%(vs3, n) + "\\\n\
+            vadd.vi v%d, v%d, 1; "%(vs3, vs3) + "\\\n\
+            store_inst v%d, (x7), v%d; "%(vs3, n) + "\\\n\
+            load_inst v%d, (x7), v%d; "%(vs3, n) + "\\\n\
+        ) ", file=f)
+
+
+def generate_tests_vsxei(f, instr, instr_l, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    
+    n = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # %s Tests"%instr, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+
+    for i in range(2):
+        n += 1
+        print("  TEST_VSXEI_OP( "+str(n)+", %s.v, %s.v, %d, "%(instr_l, instr, eew)+"0 + tdat"+", "+"idx%ddat"%eew+" );", file=f)
+        n += 1
+        print("  TEST_VSXEI_OP( "+str(n)+", %s.v, %s.v, %d, "%(instr_l, instr, eew)+"%d + tdat"%(vsew//8)+", "+"idx%ddat"%eew+" );", file=f)
+        n += 1
+        print("  TEST_VSXEI_OP( "+str(n)+", %s.v, %s.v, %d, "%(instr_l, instr, eew)+"4096 + tdat"+", "+"idx%ddat"%eew+" );", file=f)
+        n += 1
+        print("  TEST_VSXEI_OP( "+str(n)+", %s.v, %s.v, %d, "%(instr_l, instr, eew)+"-4096 + tsdat9"+", "+"idx%ddat"%eew+" );", file=f)
+    
+    for i in range(1, 32):     
+        if i % lmul != 0 or get_aligned_reg(i, lmul, emul) == 0:
+            continue
+        n += 1
+        print("  TEST_VSXEI_OP_vs3_%d( "%i+str(n)+",  %s.v, %s.v, %d, "%(instr_l, instr, eew)+"%d + tdat"%(vsew//8)+", "+"idx%ddat"%eew+" );", file=f)
+    
+    for i in range(1, 32):     
+        if i % emul != 0 or get_aligned_reg(i, emul, lmul) == 0:
+            continue
+        n += 1
+        print("  TEST_VSXEI_OP_vs2_%d( "%i+str(n)+",  %s.v, %s.v, %d, "%(instr_l, instr, eew)+"0 + tsdat1"+", "+"idx%ddat"%eew+" );", file=f)
+    
+    return n
 
 
 def generate_vlseg_macro(f, lmul):
@@ -381,38 +787,6 @@ def generate_macros_vlsseg(f, lmul, vsew, eew):
                 inst v16, (x30), x3 ; \\\n\
         )", file=f)
 
-def generate_macros_vlxei(f, vsew, lmul):
-    lmul = 1 if lmul < 1 else int(lmul)
-    for n in range(2, 32):
-        if n == 12 or n == 20 or n == 24:
-            continue
-        rs_index = 31 if n == 30 else 30
-        rs_vl = 29 if n == 30 or n == 31 else 31
-        print("#define TEST_VLXEI_OP_1%d( testnum, inst, index_eew, result1, result2, base_data, base_index )"%n + " \\\n\
-            TEST_CASE_LOOP( testnum, v16,   \\\n\
-                la  x%d, base_data; "%n + "\\\n\
-                la  x%d, base_index; "%(rs_index) + "\\\n\
-                vsetvli x%d, x0, MK_EEW(index_eew), tu, mu; "%(rs_vl) + "\\\n\
-                MK_VLE_INST(index_eew) v8, (x%d); "%(rs_index) + "\\\n\
-                VSET_VSEW_4AVL \\\n\
-                inst v16, (x%d), v8; "%n + "\\\n\
-        )", file=f)
-    
-    for n in range(1, 32):
-        if n == 12 or n == 20 or n == 24:
-            continue
-        # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
-        vs = 16 if n == 8 else 8
-        print("#define TEST_VLXEI_OP_rd%d( testnum, inst, index_eew, result1, result2, base_data, base_index )"%n + " \\\n\
-            TEST_CASE_LOOP( testnum, v%d, "%n + "\\\n\
-                la  x1, base_data; \\\n\
-                la  x6, base_index; \\\n\
-                vsetvli x31, x0, MK_EEW(index_eew), tu, mu; \\\n\
-                MK_VLE_INST(index_eew) v%d, (x6); \\\n\
-                VSET_VSEW_4AVL \\\n\
-                inst v%d, (x1), v%d; "%(vs, n, vs) + "\\\n\
-        ) ", file=f)
-
 
 def generate_macros_vlxeiseg(f, lmul, vsew, eew):
     emul = eew / vsew * lmul
@@ -455,46 +829,6 @@ def generate_macros_vlxeiseg(f, lmul, vsew, eew):
             la  x6, base_index; \\\n\
             MK_VLE_INST(index_eew) v8, (x6);    \\\n\
             inst v30, (x1), v8 ;  \\\n\
-        )",file=f)
-
-
-def generate_macros_vse(f, lmul, vsew, eew):
-    emul = eew / vsew * lmul
-    emul = 1 if emul < 1 else int(emul)
-    for n in range(1,30):
-        if n == 12 or n == 20 or n == 24 or n == 30: # signature base registers
-            continue
-        print("#define TEST_VSE_OP_1%d( testnum, load_inst, store_inst, eew, result, base )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x%d, base; "%n + " \\\n\
-            li  x30, result; \\\n\
-            vmv.v.x v8, x30; \\\n\
-            VSET_VSEW \\\n\
-            store_inst v8, (x%d); "%n + "\\\n\
-            load_inst v16, (x%d) ; "%n + " \\\n\
-        )",file=f)
-
-    for n in range(1,31):
-        if n == 8 or n == 16 or n == 31 or n % emul != 0 or n == 12 or n == 20 or n == 24: 
-            continue
-        print("#define TEST_VSE_OP_rd%d( testnum, load_inst, store_inst, eew, result, base )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16, " + "\\\n\
-            la  x1, base;  \\\n\
-            li  x30, result; \\\n\
-            vmv.v.x v%d, x30;  "%n + "\\\n\
-            VSET_VSEW \\\n\
-            store_inst v%d, (x1); "%n + " \\\n\
-            load_inst v16, (x1); \\\n\
-        )",file=f)
-
-    print("#define TEST_VSE_OP_130( testnum, load_inst, store_inst, eew, result, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x30, base;  \\\n\
-            li  x2, result; \\\n\
-            vmv.v.x v8, x2; \\\n\
-            VSET_VSEW \\\n\
-            store_inst v8, (x30); \\\n\
-            load_inst v16, (x30) ;  \\\n\
         )",file=f)
 
 
@@ -901,126 +1235,6 @@ def generate_vsre_macro(f, lmul):
     elif lmul == 4:
         print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + "\n", file=f)
 
-def generate_macros_vsse(f):
-    for n in range(1,31):
-        if n == 12 or n == 20 or n == 24 or n == 29 or n == 30: # signature base registers
-            continue
-        print("#define TEST_VSSE_OP_1%d( testnum, load_inst, store_inst, eew, result, stride, base )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x%d, base; "%n + " \\\n\
-            li  x29, stride;  \\\n\
-            li  x30, result; \\\n\
-            vmv.v.x v8, x30; \\\n\
-            VSET_VSEW \\\n\
-            store_inst v8, (x%d), x29; "%n + "\\\n\
-            load_inst v16, (x%d), x29 ; "%n + " \\\n\
-        )",file=f)
-
-    for n in range(1,31):
-        if n == 12 or n == 20 or n == 24 or n == 31: # signature base registers
-            continue
-        print("#define TEST_VSSE_OP_rd%d( testnum, load_inst, store_inst, eew, result, stride, base )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x1, base;  \\\n\
-            li  x2, stride; \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v%d, x3;  "%n + "\\\n\
-            VSET_VSEW \\\n\
-            store_inst v%d, (x1), x2; "%n + " \\\n\
-            load_inst v16, (x1), x2; \\\n\
-        )",file=f)
-
-    print("#define TEST_VSSE_OP_130( testnum, load_inst, store_inst, eew, result, stride, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x30, base;  \\\n\
-            li  x2, stride; \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v8, x3; \\\n\
-            VSET_VSEW \\\n\
-            store_inst v8, (x30), x2; \\\n\
-            load_inst v16, (x30), x2 ;  \\\n\
-        )",file=f)
-
-    print("#define TEST_VSSE_OP_129( testnum, load_inst, store_inst, eew, result, stride, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x29, base;  \\\n\
-            li  x2, stride; \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v8, x3; \\\n\
-            VSET_VSEW \\\n\
-            store_inst v8, (x29), x2; \\\n\
-            load_inst v16, (x29), x2 ;  \\\n\
-        )",file=f)
-    print("#define TEST_VSSE_OP_rd31( testnum, load_inst, store_inst, eew, result, stride, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v31,  \\\n\
-            la  x1, base;  \\\n\
-            li  x2, stride; \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v31, x3; \\\n\
-            VSET_VSEW \\\n\
-            store_inst v31, (x1), x2; \\\n\
-            load_inst v1, (x1), x2;  \\\n\
-        )",file=f)
-
-def generate_macros_vsuxei(f):
-    for n in range(1,30):
-        if n == 12 or n == 20 or n == 24 or n == 30 or n == 31: # signature base registers
-            continue
-        print("#define TEST_VSXEI_OP_1%d( testnum, load_inst, store_inst, index_eew, result, base_data, base_index )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x%d, base_data; "%n + " \\\n\
-            la  x30, base_index; \\\n\
-            MK_VLE_INST(index_eew) v24, (x30);    \\\n\
-            li  x31, result; \\\n\
-            vmv.v.x v8, x31; \\\n\
-            store_inst v8, (x%d), v24;"%n + " \\\n\
-            load_inst v16, (x%d), v24;"%n + " \\\n\
-        )",file=f)
-
-    for n in range(1,31):
-        if n == 12 or n == 20 or n == 24 or n == 31: # signature base registers
-            continue
-        print("#define TEST_VSXEI_OP_rd%d( testnum, load_inst, store_inst, index_eew, result, base_data, base_index )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x1, base_data;   \\\n\
-            la  x6, base_index; \\\n\
-            MK_VLE_INST(index_eew) v24, (x6);    \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v%d, x3; "%n + "\\\n\
-            store_inst v%d, (x1), v24;"%n + " \\\n\
-            load_inst v16, (x1), v24; \\\n\
-        )",file=f)
-
-    print("#define TEST_VSXEI_OP_130( testnum, load_inst, store_inst, index_eew, result, base_data, base_index ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x30, base_data;  \\\n\
-            la  x6, base_index; \\\n\
-            MK_VLE_INST(index_eew) v24, (x6);    \\\n\
-            li  x31, result; \\\n\
-            vmv.v.x v8, x31; \\\n\
-            store_inst v8, (x30), v24; \\\n\
-            load_inst v16, (x30), v24; \\\n\
-        )",file=f)
-    print("#define TEST_VSXEI_OP_131( testnum, load_inst, store_inst, index_eew, result, base_data, base_index ) \\\n\
-        TEST_CASE_LOOP( testnum, v16, \\\n\
-            la  x31, base_data;  \\\n\
-            la  x6, base_index; \\\n\
-            MK_VLE_INST(index_eew) v24, (x6);    \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v8, x3; \\\n\
-            store_inst v8, (x31), v24; \\\n\
-            load_inst v16, (x31), v24; \\\n\
-        )",file=f)
-    print("#define TEST_VSXEI_OP_rd31( testnum, load_inst, store_inst, index_eew, result, base_data, base_index ) \\\n\
-        TEST_CASE_LOOP( testnum, v31, \\\n\
-            la  x1, base_data;   \\\n\
-            la  x6, base_index; \\\n\
-            MK_VLE_INST(index_eew) v2, (x6);    \\\n\
-            li  x3, result; \\\n\
-            vmv.v.x v31, x3; \\\n\
-            store_inst v31, (x1), v2; \\\n\
-            load_inst v14, (x1), v2; \\\n\
-        )",file=f)
 
 def generate_macros_vsseg(f, lmul, vsew, eew):
     emul = eew / vsew * lmul

@@ -46,7 +46,7 @@ def print_rvmodel_data(arr, f):
     RVMODEL_DATA_BEGIN\n\
     \n\
     signature_x20_0:\n\
-        .fill %d*(XLEN/32)+%d*(VLEN/32),4,0xdeadbeef\n\
+        .fill %d+%d*(XLEN/32)+%d*(VLEN/32),4,0xdeadbeef\n\
     \n\
     \n\
     #ifdef rvtest_mtrap_routine\n\
@@ -64,51 +64,49 @@ def print_rvmodel_data(arr, f):
     #endif\n\
     \n\
     RVMODEL_DATA_END\n\
-    "%(arr[1], arr[2]), file=f)
+    "%(arr[0], arr[1], arr[2]), file=f)
 
-def generate_idx_data(f):
+# TODO: include positive and negative index
+def generate_idx_data(f, eew):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = float(os.environ['RVV_ATG_VSEW'])
-    num_elem = int(vlen * lmul / vsew * 8) # 8 is max seg_size 
+    num_elem = int(vlen * lmul / vsew)
     print("num_elem = %d"%num_elem)
     align_step = 1 if vsew == 8 else 2 if vsew == 16 else 4 if vsew == 32 else 8
     
-    print(".align 8 \n\
-idx8dat:", file=f)
-    for i in range(0, num_elem):
-        if align_step*i > 127:
-            print("    idx8dat%d:  .zero %d" % (i+1, num_elem - i + 1) * 1, file=f)
-            break
-        print("    idx8dat%d:  .byte %d" % (i+1, align_step*i), file=f)
-    print("\n", file=f)
-    
-    print(".align 8 \n\
-idx16dat:", file=f)
-    for i in range(0, num_elem):
-        if align_step*i > 32767:
-            print("    idx16dat%d:   .zero %d" % (i+1, num_elem - i + 1) * 2, file=f)
-            break
-        print("    idx16dat%d:  .hword %d" % (i+1, align_step*i), file=f)
-    print("\n", file=f)
-    
-    print(".align 8 \n\
-idx32dat:", file=f)
-    for i in range(0, num_elem):
-        if align_step*i > 2147483647:
-            print("    idx32dat%d:   .zero %d" % (i+1, num_elem - i + 1) * 4, file=f)
-            break
-        print("    idx32dat%d:  .word %d" % (i+1, align_step*i), file=f)
-    print("\n", file=f)
-    
-    print(".align 8 \n\
-idx64dat:", file=f)
-    for i in range(0, num_elem):
-        if align_step*i > 9223372036854775807:
-            print("    idx64dat%d:   .zero %d" % (i+1, num_elem - i + 1) * 8, file=f)
-            break
-        print("    idx64dat%d:  .dword %d" % (i+1, align_step*i), file=f)
-    print("\n\n", file=f)
+    if eew == 8:
+        print(".align 8 \n idx8dat:", file=f)
+        for i in range(0, num_elem):
+            if align_step*i > 127:
+                print("    idx8dat%d:  .zero %d" % (i+1, num_elem - i + 1) * 1, file=f)
+                break
+            print("    idx8dat%d:  .byte %d" % (i+1, align_step*i), file=f)
+        print("\n", file=f)
+    elif eew == 16:
+        print(".align 8 \n idx16dat:", file=f)
+        for i in range(0, num_elem):
+            if align_step*i > 32767:
+                print("    idx16dat%d:   .zero %d" % (i+1, num_elem - i + 1) * 2, file=f)
+                break
+            print("    idx16dat%d:  .hword %d" % (i+1, align_step*i), file=f)
+        print("\n", file=f)
+    elif eew == 32:
+        print(".align 8 \n idx32dat:", file=f)
+        for i in range(0, num_elem):
+            if align_step*i > 2147483647:
+                print("    idx32dat%d:   .zero %d" % (i+1, num_elem - i + 1) * 4, file=f)
+                break
+            print("    idx32dat%d:  .word %d" % (i+1, align_step*i), file=f)
+        print("\n", file=f)
+    elif eew == 64:
+        print(".align 8 \n idx64dat:", file=f)
+        for i in range(0, num_elem):
+            if align_step*i > 9223372036854775807:
+                print("    idx64dat%d:   .zero %d" % (i+1, num_elem - i + 1) * 8, file=f)
+                break
+            print("    idx64dat%d:  .dword %d" % (i+1, align_step*i), file=f)
+        print("\n\n", file=f)
 
 
 def print_common_header(instr, f):
@@ -168,12 +166,18 @@ def print_common_ending(f, test_num = 0, print_data = False):
     print_rvmodel_data(arr, f)
 
 
-def gen_arr_load(n):
+def gen_arr_load(n, eew, is_vse = False):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    arr = [0, int(vlen * lmul / vsew) * n + xfvcsr_num * n, 0]
+    if is_vse:
+        emul = eew / vsew * lmul
+        xlen = int(os.environ['RVV_ATG_XLEN'])
+        num_bytes = max(xlen // 8, emul * vlen // 8)
+        arr = [num_bytes * n, xfvcsr_num * n, 0]
+    else:
+        arr = [0, int(vlen * lmul / vsew) * n + xfvcsr_num * n, 0]
     return arr
 
 def gen_arr_compute(test_num_tuple, is_reduction = False, is_mask = False):
@@ -269,7 +273,7 @@ def print_data_width_prefix(f, vsew):
         print(".dword", end="\t", file=f)
 
 
-def print_load_ending(f, n = 0):
+def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False):
     print("#endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -280,9 +284,9 @@ def print_load_ending(f, n = 0):
     \n\
     TEST_DATA\n\
     \n\
-    .type tdat, @object\n\
-    .size tdat, 4128\n\
     .align 8 \n\
+    .type tdat, @object\n\
+    .size tdat, 8256\n\
     tdat:\n\
     tdat1:  .word 0x00ff00ff\n\
     tdat2:  .word 0xff00ff00\n\
@@ -292,7 +296,7 @@ def print_load_ending(f, n = 0):
     tdat6:  .word 0xff00ff00\n\
     tdat7:  .word 0x0ff00ff0\n\
     tdat8:  .word 0xf00ff00f\n\
-    tdat9:  .zero 4064\n\
+    tdat9:  .zero 4096\n\
     tdat10:  .word 0x00ff00ff\n\
     tdat11:  .word 0xff00ff00\n\
     tdat12:  .word 0x0ff00ff0\n\
@@ -301,114 +305,39 @@ def print_load_ending(f, n = 0):
     tdat15:  .word 0xff00ff00\n\
     tdat16:  .word 0x0ff00ff0\n\
     tdat17:  .word 0xf00ff00f\n\
+    tdat18:  .word 0x00ff00ff\n\
+    tdat19:  .word 0xff00ff00\n\
+    tdat20:  .word 0x0ff00ff0\n\
+    tdat21:  .word 0xf00ff00f\n\
+    tdat22:  .word 0x00ff00ff\n\
+    tdat23:  .word 0xff00ff00\n\
+    tdat24:  .word 0x0ff00ff0\n\
+    tdat25:  .word 0xf00ff00f\n\
+    tdat26:  .zero 4064\n\
+    \n\
+    .type tsdat, @object\n\
+    .size tsdat, 1040320\n\
+    tsdat:\n\
+    tsdat0:  .zero 520144\n\
+    tsdat1:  .word 0x00ff00ff\n\
+    tsdat2:  .word 0xff00ff00\n\
+    tsdat3:  .word 0x0ff00ff0\n\
+    tsdat4:  .word 0xf00ff00f\n\
+    tsdat5:  .word 0x00ff00ff\n\
+    tsdat6:  .word 0xff00ff00\n\
+    tsdat7:  .word 0x0ff00ff0\n\
+    tsdat8:  .word 0xf00ff00f\n\
+    tsdat9:  .zero 520144\n\
     \n", file=f)
     
-    generate_idx_data(f)
+    if print_idx:
+        generate_idx_data(f, eew)
     
     print_mask_origin_data_ending_fixed(f)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_load(n)
-    print_rvmodel_data(arr, f)
-
-def print_loaddword_ending(f, n = 0):
-    print("  #endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n\
-    .type tdat, @object\n\
-    .size tdat, 4128\n\
-    .align 8 \n\
-    tdat:\n\
-    tdat1:  .dword 0x00ff00ff\n\
-    tdat2:  .dword 0xff00ff00\n\
-    tdat3:  .dword 0x0ff00ff0\n\
-    tdat4:  .dword 0xf00ff00f\n\
-    tdat5:  .dword 0x00ff00ff\n\
-    tdat6:  .dword 0xff00ff00\n\
-    tdat7:  .dword 0x0ff00ff0\n\
-    tdat8:  .dword 0xf00ff00f\n\
-    tdat9:  .zero 4064\n\
-    tdat10:  .dword 0x00ff00ff\n\
-    tdat11:  .dword 0xff00ff00\n\
-    tdat12:  .dword 0x0ff00ff0\n\
-    tdat13:  .dword 0xf00ff00f\n\
-    tdat14:  .dword 0x00ff00ff\n\
-    tdat15:  .dword 0xff00ff00\n\
-    tdat16:  .dword 0x0ff00ff0\n\
-    tdat17:  .dword 0xf00ff00f\n\
-    \n", file=f)
-    
-    generate_idx_data(f)
-    
-    
-    print("\n\
-    RVTEST_DATA_END\n\
-    \n", file=f)
-    arr = gen_arr_load(n)
-    print_rvmodel_data(arr, f)
-
-
-def print_loadls_ending(f, n = 0):
-    print("#endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n\
-    .type tsdat, @object\n\
-    .size tsdat, 1049856\n\
-    tsdat:\n\
-    tsdat1:  .zero 524800\n\
-    tsdat2:  .word 0x00ff00ff\n\
-    tsdat3:  .word 0xff00ff00\n\
-    tsdat4:  .word 0x0ff00ff0\n\
-    tsdat5:  .word 0xf00ff00f\n\
-    tsdat6:  .word 0x00ff00ff\n\
-    tsdat7:  .word 0xff00ff00\n\
-    tsdat8:  .word 0x0ff00ff0\n\
-    tsdat9:  .word 0xf00ff00f\n\
-    tsdat10: .zero 524800\n\
-    \n\
-    .type tdat, @object\n\
-    .size tdat, 4128\n\
-    .align 8 \n\
-    tdat:\n\
-    tdat1:  .word 0x00ff00ff\n\
-    tdat2:  .word 0xff00ff00\n\
-    tdat3:  .word 0x0ff00ff0\n\
-    tdat4:  .word 0xf00ff00f\n\
-    tdat5:  .word 0x00ff00ff\n\
-    tdat6:  .word 0xff00ff00\n\
-    tdat7:  .word 0x0ff00ff0\n\
-    tdat8:  .word 0xf00ff00f\n\
-    tdat9:  .zero 4064\n\
-    tdat10:  .word 0x00ff00ff\n\
-    tdat11:  .word 0xff00ff00\n\
-    tdat12:  .word 0x0ff00ff0\n\
-    tdat13:  .word 0xf00ff00f\n\
-    tdat14:  .word 0x00ff00ff\n\
-    tdat15:  .word 0xff00ff00\n\
-    tdat16:  .word 0x0ff00ff0\n\
-    tdat17:  .word 0xf00ff00f\n\
-    \n", file=f)
-    generate_idx_data(f)
-    
-    print("\n\
-    RVTEST_DATA_END\n\
-    \n", file=f)
-    arr = gen_arr_load(n)
+    arr = gen_arr_load(n, eew, is_vse = is_vse)
     print_rvmodel_data(arr, f)
 
 

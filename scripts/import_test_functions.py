@@ -174,6 +174,11 @@ from scripts.create_test_loadstore.create_test_vlssege32 import *
 from scripts.create_test_loadstore.create_test_vluxei8 import *
 from scripts.create_test_loadstore.create_test_vluxei16 import *
 from scripts.create_test_loadstore.create_test_vluxei32 import *
+from scripts.create_test_loadstore.create_test_vluxei64 import *
+from scripts.create_test_loadstore.create_test_vloxei8 import *
+from scripts.create_test_loadstore.create_test_vloxei16 import *
+from scripts.create_test_loadstore.create_test_vloxei32 import *
+from scripts.create_test_loadstore.create_test_vloxei64 import *
 from scripts.create_test_loadstore.create_test_vluxsegei8 import *
 from scripts.create_test_loadstore.create_test_vluxsegei16 import *
 from scripts.create_test_loadstore.create_test_vluxsegei32 import *
@@ -182,10 +187,12 @@ from scripts.create_test_loadstore.create_test_vluxsegei32 import *
 from scripts.create_test_loadstore.create_test_vse8 import *
 from scripts.create_test_loadstore.create_test_vse16 import *
 from scripts.create_test_loadstore.create_test_vse32 import *
+from scripts.create_test_loadstore.create_test_vse64 import *
 from scripts.create_test_loadstore.create_test_vsre import *
 from scripts.create_test_loadstore.create_test_vsse8 import *
 from scripts.create_test_loadstore.create_test_vsse16 import *
 from scripts.create_test_loadstore.create_test_vsse32 import *
+from scripts.create_test_loadstore.create_test_vsse64 import *
 from scripts.create_test_loadstore.create_test_vssege8 import *
 from scripts.create_test_loadstore.create_test_vssege16 import *
 from scripts.create_test_loadstore.create_test_vssege32 import *
@@ -195,6 +202,11 @@ from scripts.create_test_loadstore.create_test_vsssege32 import *
 from scripts.create_test_loadstore.create_test_vsuxei8 import *
 from scripts.create_test_loadstore.create_test_vsuxei16 import *
 from scripts.create_test_loadstore.create_test_vsuxei32 import *
+from scripts.create_test_loadstore.create_test_vsuxei64 import *
+from scripts.create_test_loadstore.create_test_vsoxei8 import *
+from scripts.create_test_loadstore.create_test_vsoxei16 import *
+from scripts.create_test_loadstore.create_test_vsoxei32 import *
+from scripts.create_test_loadstore.create_test_vsoxei64 import *
 from scripts.create_test_loadstore.create_test_vsuxsegei8 import *
 from scripts.create_test_loadstore.create_test_vsuxsegei16 import *
 from scripts.create_test_loadstore.create_test_vsuxsegei32 import *

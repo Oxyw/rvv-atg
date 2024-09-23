@@ -1,41 +1,11 @@
 import logging
 import os
-from scripts.create_test_loadstore.create_test_common import generate_macros_vsuxei
+from scripts.create_test_loadstore.create_test_common import generate_macros_vsxei, generate_tests_vsxei
 from scripts.test_common_info import *
 import re
 
 instr = 'vsuxei32'
-instr1 = 'vluxei32'
-
-def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
-    emul = 32 / vsew * lmul
-    if emul < 0.125 or emul > 8:
-        return 0
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    n = 0
-    print("  #-------------------------------------------------------------", file=f)
-    print("  # VV Tests", file=f)
-    print("  #-------------------------------------------------------------", file=f)
-
-    for i in range(2):
-        n += 1
-        print("  TEST_VSXEI_OP( "+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0x00ff00ff"+",  "+"0 + tdat"+", "+"idx32dat"+" );", file=f)
-        n += 1
-        print("  TEST_VSXEI_OP( "+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0x0"+",  "+"4096 + tdat"+", "+"idx32dat"+" );", file=f)
-    for i in range(100):     
-        k = i%30+1
-        if k % emul == 0 and k % lmul == 0 and k not in [31, 8, 16, 24] and not is_overlap(k, lmul, 8, emul) and k!= 12 and k != 20 and k !=24:
-            n += 1
-            print("  TEST_VSXEI_OP_rd%d( "%k+str(n)+",  %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0x00ff00ff"+",  "+"0 + tdat"+", "+"idx32dat"+" );",file=f)
-    
-        k = i%30+2
-        if(k == 31 or k == 12 or k == 20 or k == 24):
-            continue;
-        n += 1
-        print("  TEST_VSXEI_OP_1%d( "%k+str(n)+",  %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0x00ff00ff"+", "+"-12 + tdat4"+", "+"idx32dat"+" );",file=f)
-    return n
-
+instr_l = 'vluxei32'
 
 
 def create_empty_test_vsuxei32(xlen, vlen, vsew, lmul, vta, vma, output_dir):
@@ -47,11 +17,10 @@ def create_empty_test_vsuxei32(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     # Common header files
     print_common_header(instr, f)
 
-
     # Common const information
 
     # Load const information
-    print_load_ending(f)
+    print_load_ending(f, 32, print_idx = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -75,15 +44,15 @@ def create_first_test_vsuxei32(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vsuxei(f)
+    generate_macros_vsxei(f, lmul, vsew, 32)
 
     # Generate tests
-    n = generate_tests(f, rs1_val, rs2_val, vsew, lmul)
+    n = generate_tests_vsxei(f, instr, instr_l, rs1_val, rs2_val, lmul, vsew, 32)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f, n)
+    print_load_ending(f, 32, n, print_idx = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
