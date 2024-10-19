@@ -9,6 +9,13 @@ vlsege8:
       vlseg6e8.v: 0
       vlseg7e8.v: 0
       vlseg8e8.v: 0
+      vlseg2e8ff.v: 0
+      vlseg3e8ff.v: 0
+      vlseg4e8ff.v: 0
+      vlseg5e8ff.v: 0
+      vlseg6e8ff.v: 0
+      vlseg7e8ff.v: 0
+      vlseg8e8ff.v: 0
     rs1: 
       <<: *all_regs_cropped
     rd: 

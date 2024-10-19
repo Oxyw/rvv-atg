@@ -166,18 +166,19 @@ def print_common_ending(f, test_num = 0, print_data = False):
     print_rvmodel_data(arr, f)
 
 
-def gen_arr_load(n, eew, is_vse = False):
+def gen_arr_load(n, eew, is_vse = False, seg = 1):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
+    elem_num = int(vlen * lmul / vsew)
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
-    if is_vse:
-        emul = eew / vsew * lmul
-        xlen = int(os.environ['RVV_ATG_XLEN'])
-        num_bytes = max(xlen // 8, emul * vlen // 8)
-        arr = [num_bytes * n, xfvcsr_num * n, 0]
+    if is_vse: # vse<eew> and vsseg<nf>e<eew>
+        arr = [seg, xfvcsr_num * n, 0]
     else:
-        arr = [0, int(vlen * lmul / vsew) * n + xfvcsr_num * n, 0]
+        if seg == 1:
+            arr = [0, elem_num * n + xfvcsr_num * n, 0]
+        else:
+            arr = [0, elem_num * seg + xfvcsr_num * n, 0]
     return arr
 
 def gen_arr_compute(test_num_tuple, is_reduction = False, is_mask = False):
@@ -273,7 +274,7 @@ def print_data_width_prefix(f, vsew):
         print(".dword", end="\t", file=f)
 
 
-def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False):
+def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False, seg = 1):
     print("#endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -337,7 +338,7 @@ def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False):
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_load(n, eew, is_vse = is_vse)
+    arr = gen_arr_load(n, eew, is_vse = is_vse, seg = seg)
     print_rvmodel_data(arr, f)
 
 

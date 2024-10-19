@@ -1,112 +1,43 @@
 import logging
 import os
-from scripts.create_test_loadstore.create_test_common import generate_macros_vsseg
+from scripts.create_test_loadstore.create_test_common import generate_macros_vsseg, generate_tests_vsseg
 from scripts.test_common_info import *
 import re
 
-name = 'vssege32'
-
-instr = 'vsseg2e32'
-instr1 = 'vlseg2e32'
-instr2 = 'vsseg3e32' 
-instr2l = 'vlseg3e32'
-instr3 = 'vsseg4e32' 
-instr3l = 'vlseg4e32'
-instr4 = 'vsseg5e32' 
-instr4l = 'vlseg5e32'
-instr5 = 'vsseg6e32' 
-instr5l = 'vlseg6e32'
-instr6 = 'vsseg7e32' 
-instr6l = 'vlseg7e32'
-instr7 = 'vsseg8e32' 
-instr7l = 'vlseg8e32' 
-
-
-def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
-    emul = 32 / vsew * lmul
-    if emul < 0.125 or emul > 8:
-        return 0
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    n = 0
-    print("  #-------------------------------------------------------------", file=f)
-    print("  # VV Tests", file=f)
-    print("  #-------------------------------------------------------------", file=f)
-
-    for i in range(2):
-        if 2 * emul <= 8 and 2 + 2 * emul <= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG1_OP( "+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-            n += 1
-            print("   TEST_VSSEG1_OP( "+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"4 + tdat"+", rd_origin_data);", file=f)
-        if 3 * emul <= 8 and 8 + 3 * emul <= 32 and 8 + 3 * lmul<= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr2l,instr2)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-        if 4 * emul <= 8 and 8 + 4 * emul <= 32 and 8 + 4 * lmul<= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr3l,instr3)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-        if 5 * emul <= 8 and 8 + 5 * emul <= 32 and 8 + 5 * lmul<= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr4l,instr4)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-        if 6 * emul <= 8 and 8 + 6 * emul <= 32 and 8 + 6 * lmul<= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr5l,instr5)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-        if 7 * emul <= 8 and 8 + 7 * emul <= 32 and 8 + 7 * lmul<= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr6l,instr6)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-        if 8 * emul <= 8 and 8 + 8 * emul <= 32 and 8 + 8 * lmul<= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-            n += 1
-            print("   TEST_VSSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr7l,instr7)+"32"+", "+"0 + tdat"+", rd_origin_data);", file=f)
-        
-        
-    if 2 * emul <= 8 and 2 + 2 * emul <= 32: # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR);
-        for i in range(100):     
-            k = i%30+1
-            if k == 8 or k == 16 or k == 24: # (insn.rd() + nf * emul) <= NVPR
-                n += 1
-                print("  TEST_VSSEG1_OP_rd%d( "%k+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"0 + tdat"+" , rd_origin_data);",file=f)
-        
-            k = i%30+2
-            if(k == 31 or k == 12 or k == 20 or k == 24):
-                continue;
-            n += 1
-            print("   TEST_VSSEG1_OP_1%d( "%k+str(n)+", %s.v, %s.v, "%(instr1,instr)+"32"+", "+"-8 + tdat8"+" , rd_origin_data);",file=f)
-    return n
-
+instr = 'vssege32' # vsseg<nf>e32
 
 
 def create_empty_test_vssege32(xlen, vlen, vsew, lmul, vta, vma, output_dir):
-    logging.info("Creating empty test for {}".format(name))
+    logging.info("Creating empty test for {}".format(instr))
 
-    path = "%s/%s_empty.S" % (output_dir, name)
+    path = "%s/%s_empty.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
-
+    print_common_header(instr, f)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f)
+    print_load_ending(f, 32)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating empty test for {}: finish in {}!".format(name, path))
+        "Creating empty test for {}: finish in {}!".format(instr, path))
 
     return path
 
 
 def create_first_test_vssege32(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
-    logging.info("Creating first test for {}".format(name))
+    logging.info("Creating first test for {}".format(instr))
 
-    path = "%s/%s_first.S" % (output_dir, name)
+    path = "%s/%s_first.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
+    print_common_header(instr, f)
 
     # Extract operands
     rs1_val, rs2_val = extract_operands(f, rpt_path)
@@ -115,17 +46,17 @@ def create_first_test_vssege32(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt
     generate_macros_vsseg(f, lmul, vsew, 32)
 
     # Generate tests
-    n = generate_tests(f, rs1_val, rs2_val, vsew, lmul)
+    (n, footprint) = generate_tests_vsseg(f, rs1_val, rs2_val, lmul, vsew, 32)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f, n)
+    print_load_ending(f, 32, n, is_vse = True, seg = footprint)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating first test for {}: finish in {}!".format(name, path))
+        "Creating first test for {}: finish in {}!".format(instr, path))
 
     return path

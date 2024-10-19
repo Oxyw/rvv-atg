@@ -8,6 +8,7 @@ vlsege16:
       vlseg5e16.v: 0
       vlseg6e16.v: 0
       vlseg7e16.v: 0
+      vlseg8e16.v: 0
     rs1: 
       <<: *all_regs_cropped
     rd: 

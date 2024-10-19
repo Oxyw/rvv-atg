@@ -4,6 +4,11 @@ from scripts.test_common_info import get_aligned_reg
 
 sreg = "x20" # signature register
 
+def align_up(num_bytes):
+    xlen = int(os.environ['RVV_ATG_XLEN'])
+    mem_align = xlen // 8
+    return (num_bytes + mem_align - 1) // mem_align * mem_align
+
 def get_vset_eew_emul(eew, emul):
     emul_map = {0.125: "f8", 0.25: "f4", 0.5: "f2", 1: "1", 2: "2", 4: "4", 8: "8"}
     vset_string = "vsetvli x31, x0, e%d, m%s, tu, mu;"%(eew, emul_map[emul])
@@ -72,7 +77,9 @@ def generate_macros_vse(f, lmul, vsew, eew):
         return 0
     vlen = int(os.environ['RVV_ATG_VLEN'])
     xlen = int(os.environ['RVV_ATG_XLEN'])
-    num_bytes = max(xlen // 8, emul * vlen // 8) # TODO
+    # TODO
+    num_bytes = emul * vlen // 8
+    num_bytes = align_up(num_bytes)
     
     print("#define TEST_VSE_OP( testnum, load_inst, store_inst, base, sig_basereg ) \\\n\
     TEST_CASE_FORMAT( testnum, \\\n\
@@ -99,6 +106,10 @@ def generate_tests_vse(f, rs1_val, rs2_val, lmul, vsew, eew):
     emul = eew / vsew * lmul
     if emul < 0.125 or emul > 8:
         return 0
+    vlen = int(os.environ['RVV_ATG_VLEN'])
+    # TODO
+    num_bytes = emul * vlen // 8
+    num_bytes = align_up(num_bytes)
     
     n = 0
     print("  #-------------------------------------------------------------", file=f)
@@ -117,7 +128,7 @@ def generate_tests_vse(f, rs1_val, rs2_val, lmul, vsew, eew):
         n += 1
         print("  TEST_VSE_OP_vs3_%d( "%i+str(n)+", vle%d.v, vse%d.v, "%(eew, eew)+"0 + tdat, "+"%s );"%sreg, file=f)
     
-    return n
+    return (n, num_bytes * n)
 
 
 def generate_macros_vlse(f, lmul, vsew, eew):
@@ -409,177 +420,351 @@ def generate_tests_vsxei(f, instr, instr_l, rs1_val, rs2_val, lmul, vsew, eew):
     return n
 
 
-def generate_vlseg_macro(f, lmul):
-    print("\
-    #define TEST_VLSEG1_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \n\
-    #define TEST_VLSEG2_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d) "%(8+lmul) + " \n\
-    #define TEST_VLSEG3_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \n", file=f)
+def generate_macros_vlseg(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    emul_1 = max(1, emul) # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
     
-    if 8+lmul*4 < 32:
-        print("#define TEST_VLSEG4_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \n", file=f)
-    
-    if 8+lmul*5 < 32:
-        print("\
-    #define TEST_VLSEG5_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + "\n", file=f)
-    
-    if 8+lmul*6 < 32:
-        print("\
-    #define TEST_VLSEG6_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + "\n", file=f)
-    
-    if 8+lmul*7 < 32:
-        print("#define TEST_VLSEG7_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + "\n", file=f)
-    
-    if 8+lmul*8 < 32:
-        print("#define TEST_VLSEG8_OP( testnum, inst, eew, base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*7) + " \n", file=f)
+    for nf in range(2, 9):
+        if emul_1 * nf > 8: # out of range
+            break
+        
+        print("#define TEST_VLSEG%d_OP( testnum, inst, base )"%nf + " \\\n\
+        TEST_CASE_LOOP_EEW( testnum, v8,   \\\n\
+            la  x7, base; \\\n\
+            inst v8, (x7); \\\n\
+        )\\", file=f)
+        for i in range(1, nf):
+            print("    TEST_CASE_LOOP_CONTINUE( testnum, v%d) %s"%(8+emul_1*i, "\n" if i + 1 == nf else "\\"), file=f)
+        
+        for n in range(1, 32):
+            if n % emul != 0:
+                continue
+            if n + emul_1*nf > 32:
+                break
+            print("#define TEST_VLSEG%d_OP_vd_%d( testnum, inst, base )"%(nf, n) + " \\\n\
+            TEST_CASE_LOOP_EEW( testnum, v%d,  "%n + "\\\n\
+                la  x7, base; \\\n\
+                inst v%d, (x7); "%n + "\\\n\
+            )\\", file=f)
+            for i in range(1, nf):
+                print("    TEST_CASE_LOOP_CONTINUE( testnum, v%d) %s"%(n+emul_1*i, "\n" if i + 1 == nf else "\\"), file=f)
 
-def generate_vlsseg_macro(f, lmul):
-    print("\
-    #define TEST_VLSSEG1_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \n\
-    #define TEST_VLSSEG2_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d) "%(8+lmul) + " \n\
-    #define TEST_VLSSEG3_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "\n", file=f)
+
+def generate_tests_vlseg(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    emul_1 = max(1, emul)
     
-    if 8+lmul*4 < 32:
-        print("#define TEST_VLSSEG4_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \n", file=f)
+    n = 0
+    rnd = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vlseg<nf>e%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
     
-    if 8+lmul*5 < 32:
-        print("#define TEST_VLSSEG5_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + "\n", file=f)
+    for i in range(2):
+        for nf in range(2, 9):
+            if emul_1 * nf > 8: # out of range
+                break
+            instr = "vlseg%de%d"%(nf, eew)
+            n += 1
+            print("  TEST_VLSEG%d_OP( "%nf+str(n)+",  %s.v, " %(instr)+"0 + tdat"+" );", file=f)
+            rnd += nf
+            n += 1
+            print("  TEST_VLSEG%d_OP( "%nf+str(n)+",  %s.v, " %(instr)+"%d + tdat10"%(eew//8)+" );", file=f)
+            rnd += nf
+            n += 1
+            print("  TEST_VLSEG%d_OP( "%nf+str(n)+",  %s.v, " %(instr)+"-64 + tsdat9"+" );", file=f)
+            rnd += nf
+            
+            n += 1
+            print("  TEST_VLSEG%d_OP( "%nf+str(n)+",  %sff.v, " %(instr)+"0 + tdat"+" );", file=f)
+            rnd += nf
     
-    if 8+lmul*6 < 32:
-        print("#define TEST_VLSSEG6_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + "\n", file=f)
+    for nf in range(2, 9):
+        if emul_1 * nf > 8:
+            break
+        instr = "vlseg%de%d"%(nf, eew)
+        for i in range(1, 32):
+            if i % emul != 0:
+                continue
+            if i + emul_1*nf > 32:
+                break
+            n += 1
+            print("  TEST_VLSEG%d_OP_vd_%d( "%(nf, i)+str(n)+",  %s.v, " %(instr)+"0 + tdat"+" );", file=f)
+            rnd += nf
     
-    if 8+lmul*7 < 32:
-        print("#define TEST_VLSSEG7_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + "\n", file=f)
+    return (n, rnd)
+
+
+def generate_macros_vsseg(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    vlen = int(os.environ['RVV_ATG_VLEN'])
     
-    if 8+lmul*8 < 32:
-        print("#define TEST_VLSSEG8_OP(  testnum, inst, eew, stride, base  ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            inst v8, (x1), x2; \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*7) + " \n", file=f)
+    # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR
+    emul_1 = max(1, emul)
+    for nf in range(2, 9):
+        if emul_1 * nf > 8: # out of range
+            break
+        # TODO
+        num_bytes = nf * emul * vlen // 8
+        num_bytes = align_up(num_bytes)
+        
+        print("#define TEST_VSSEG%d_OP( testnum, load_inst, store_inst, base, sig_basereg )"%nf + " \\\n\
+        TEST_CASE_FORMAT( testnum, \\\n\
+            la  x7, base; \\\n\
+            load_inst v8, (x7); \\\n\
+            RVTEST_BASEUPD(sig_basereg); \\\n\
+            store_inst v8, (sig_basereg); \\\n\
+            addi sig_basereg, sig_basereg, %d;"%(num_bytes) + " \\\n\
+        )", file=f)
+        
+        for n in range(1, 32):
+            if n % emul != 0:
+                continue
+            if n + emul_1*nf > 32:
+                break
+            print("#define TEST_VSSEG%d_OP_vs3_%d( testnum, load_inst, store_inst, base, sig_basereg )"%(nf, n) + " \\\n\
+            TEST_CASE_FORMAT( testnum, \\\n\
+                la  x7, base; \\\n\
+                load_inst v%d, (x7); "%n + "\\\n\
+                RVTEST_BASEUPD(sig_basereg); \\\n\
+                store_inst v%d, (sig_basereg); "%n + "\\\n\
+                addi sig_basereg, sig_basereg, %d;"%(num_bytes) + " \\\n\
+            )", file=f)
+
+
+def generate_tests_vsseg(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    emul_1 = max(1, emul)
+    vlen = int(os.environ['RVV_ATG_VLEN'])
+    
+    n = 0
+    footprint = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vsseg<nf>e%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+    
+    for i in range(2):
+        for nf in range(2, 9):
+            if emul_1 * nf > 8: # out of range
+                break
+            # TODO
+            num_bytes = nf * emul * vlen // 8
+            num_bytes = align_up(num_bytes)
+            instr_l = "vlseg%de%d"%(nf, eew)
+            instr = "vsseg%de%d"%(nf, eew)
+            n += 1
+            print("  TEST_VSSEG%d_OP( "%nf+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"0 + tdat, "+"%s );"%sreg, file=f)
+            footprint += num_bytes
+            n += 1
+            print("  TEST_VSSEG%d_OP( "%nf+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"%d + tdat10, "%(eew//8)+"%s );"%sreg, file=f)
+            footprint += num_bytes
+            n += 1
+            print("  TEST_VSSEG%d_OP( "%nf+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"-64 + tsdat9, "+"%s );"%sreg, file=f)
+            footprint += num_bytes
+    
+    for nf in range(2, 9):
+        if emul_1 * nf > 8:
+            break
+        # TODO
+        num_bytes = nf * emul * vlen // 8
+        num_bytes = align_up(num_bytes)
+        instr_l = "vlseg%de%d"%(nf, eew)
+        instr = "vsseg%de%d"%(nf, eew)
+        for i in range(1, 32):
+            if i % emul != 0:
+                continue
+            if i + emul_1*nf > 32:
+                break
+            n += 1
+            print("  TEST_VSSEG%d_OP_vs3_%d( "%(nf, i)+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"0 + tdat, "+"%s );"%sreg, file=f)
+            footprint += num_bytes
+    
+    return (n, footprint)
+
+
+def generate_macros_vlsseg(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    emul_1 = max(1, emul) # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    for nf in range(2, 9):
+        if emul_1 * nf > 8: # out of range
+            break
+        
+        print("#define TEST_VLSSEG%d_OP( testnum, inst, base, stride )"%nf + " \\\n\
+        TEST_CASE_LOOP_EEW( testnum, v8,   \\\n\
+            la  x7, base; \\\n\
+            li  x8, stride; \\\n\
+            inst v8, (x7), x8; \\\n\
+        )\\", file=f)
+        for i in range(1, nf):
+            print("    TEST_CASE_LOOP_CONTINUE( testnum, v%d) %s"%(8+emul_1*i, "\n" if i + 1 == nf else "\\"), file=f)
+        
+        for n in range(1, 32):
+            if n % emul != 0:
+                continue
+            if n + emul_1*nf > 32:
+                break
+            print("#define TEST_VLSSEG%d_OP_vd_%d( testnum, inst, base, stride )"%(nf, n) + " \\\n\
+            TEST_CASE_LOOP_EEW( testnum, v%d,  "%n + "\\\n\
+                la  x7, base; \\\n\
+                li  x8, stride; \\\n\
+                inst v%d, (x7), x8; "%n + "\\\n\
+            )\\", file=f)
+            for i in range(1, nf):
+                print("    TEST_CASE_LOOP_CONTINUE( testnum, v%d) %s"%(n+emul_1*i, "\n" if i + 1 == nf else "\\"), file=f)
+
+
+def generate_tests_vlsseg(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    emul_1 = max(1, emul)
+    
+    n = 0
+    rnd = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vlsseg<nf>e%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+    
+    for i in range(2):
+        for nf in range(2, 9):
+            if emul_1 * nf > 8: # out of range
+                break
+            instr = "vlsseg%de%d"%(nf, eew)
+            n += 1
+            print("  TEST_VLSSEG%d_OP( "%nf+str(n)+",  %s.v, " %(instr)+"0 + tdat, 0"+" );", file=f)
+            rnd += nf
+            n += 1
+            print("  TEST_VLSSEG%d_OP( "%nf+str(n)+",  %s.v, " %(instr)+"0 + tdat10, %d"%(eew//8)+" );", file=f)
+            rnd += nf
+            n += 1
+            print("  TEST_VLSSEG%d_OP( "%nf+str(n)+",  %s.v, " %(instr)+"0 + tsdat9, -128"+" );", file=f)
+            rnd += nf
+    
+    for nf in range(2, 9):
+        if emul_1 * nf > 8:
+            break
+        instr = "vlsseg%de%d"%(nf, eew)
+        for i in range(1, 32):
+            if i % emul != 0:
+                continue
+            if i + emul_1*nf > 32:
+                break
+            n += 1
+            print("  TEST_VLSSEG%d_OP_vd_%d( "%(nf, i)+str(n)+",  %s.v, " %(instr)+"0 + tdat, %d"%(eew//8)+" );", file=f)
+            rnd += nf
+    
+    return (n, rnd)
+
+
+def generate_macros_vssseg(f, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        print("emul is out of range!")
+        return 0
+    emul_1 = max(1, emul) # (nf * emul) <= (NVPR / 4) &&  (insn.rd() + nf * emul) <= NVPR
+    VSET_EEW_EMUL = get_vset_eew_emul(eew, emul)
+    print("#define VSET_EEW_EMUL %s\n"%VSET_EEW_EMUL, file=f)
+    
+    for nf in range(2, 9):
+        if emul_1 * nf > 8: # out of range
+            break
+        
+        print("#define TEST_VSSSEG%d_OP( testnum, load_inst, store_inst, base, stride )"%nf + " \\\n\
+        TEST_CASE_LOOP_EEW( testnum, v16,   \\\n\
+            la  x7, base; \\\n\
+            li  x8, stride; \\\n\
+            load_inst v8, (x7), x8; \\\n\
+            VSET_EEW_EMUL \\\n\
+            vadd.vi v8, v8, 1; \\\n\
+            VSET_VSEW_4AVL \\\n\
+            store_inst v8, (x7), x8; \\\n\
+            load_inst v16, (x7), x8; \\\n\
+        )\\", file=f)
+        for i in range(1, nf):
+            print("    TEST_CASE_LOOP_CONTINUE( testnum, v%d) %s"%(16+emul_1*i, "\n" if i + 1 == nf else "\\"), file=f)
+        
+        for n in range(1, 32):
+            if n % emul != 0:
+                continue
+            if n + emul_1*nf > 32:
+                break
+            print("#define TEST_VSSSEG%d_OP_vs3_%d( testnum, load_inst, store_inst, base, stride )"%(nf, n) + " \\\n\
+            TEST_CASE_LOOP_EEW( testnum, v%d,  "%n + "\\\n\
+                la  x7, base; \\\n\
+                li  x8, stride; \\\n\
+                load_inst v%d, (x7), x8; "%n + "\\\n\
+                VSET_EEW_EMUL \\\n\
+                vadd.vi v%d, v%d, 1; "%(n, n) + "\\\n\
+                VSET_VSEW_4AVL \\\n\
+                store_inst v%d, (x7), x8; "%n + "\\\n\
+                load_inst v%d, (x7), x8; "%n + "\\\n\
+            )\\", file=f)
+            for i in range(1, nf):
+                print("    TEST_CASE_LOOP_CONTINUE( testnum, v%d) %s"%(n+emul_1*i, "\n" if i + 1 == nf else "\\"), file=f)
+
+
+def generate_tests_vssseg(f, rs1_val, rs2_val, lmul, vsew, eew):
+    emul = eew / vsew * lmul
+    if emul < 0.125 or emul > 8:
+        return 0
+    emul_1 = max(1, emul)
+    
+    n = 0
+    rnd = 0
+    print("  #-------------------------------------------------------------", file=f)
+    print("  # vssseg<nf>e%d Tests"%eew, file=f)
+    print("  #-------------------------------------------------------------", file=f)
+    
+    for i in range(2):
+        for nf in range(2, 9):
+            if emul_1 * nf > 8: # out of range
+                break
+            instr_l = "vlsseg%de%d"%(nf, eew)
+            instr = "vssseg%de%d"%(nf, eew)
+            n += 1
+            print("  TEST_VSSSEG%d_OP( "%nf+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"0 + tdat, 0"+" );", file=f)
+            rnd += nf
+            n += 1
+            print("  TEST_VSSSEG%d_OP( "%nf+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"0 + tdat10, %d"%(eew//8)+" );", file=f)
+            rnd += nf
+            n += 1
+            print("  TEST_VSSSEG%d_OP( "%nf+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"0 + tsdat9, -128"+" );", file=f)
+            rnd += nf
+    
+    for nf in range(2, 9):
+        if emul_1 * nf > 8:
+            break
+        instr_l = "vlsseg%de%d"%(nf, eew)
+        instr = "vssseg%de%d"%(nf, eew)
+        for i in range(1, 32):
+            if i % emul != 0:
+                continue
+            if i + emul_1*nf > 32:
+                break
+            n += 1
+            print("  TEST_VSSSEG%d_OP_vs3_%d( "%(nf, i)+str(n)+",  %s.v, %s.v, "%(instr_l, instr)+"0 + tdat, %d"%(eew//8)+" );", file=f)
+            rnd += nf
+    
+    return (n, rnd)
+
 
 def generate_vlxeiseg_macro(f, lmul):
     print("\
@@ -733,60 +918,6 @@ def generate_vlre_macro(f, lmul):
     elif lmul == 4:
         print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + "\n", file=f)
 
-def generate_macros_vlseg(f, lmul, vsew, eew):
-    emul = eew / vsew * lmul
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    # testreg is v8
-    generate_vlseg_macro(f, lmul)
-    for n in range(1, 32):
-        if n == 12 or n == 20 or n == 24: # signature base registers
-            continue
-        print("#define TEST_VLSEG1_OP_1%d( testnum, inst, eew, base )"%n + " \\\n\
-            TEST_CASE_LOOP( testnum, v8,  \\\n\
-                la  x%d, base; "%n + "\\\n\
-                inst v8, (x%d); "%n + "\\\n\
-        )", file=f)
-    for n in range(1, 31):
-        # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
-        if n % emul == 0 and n % lmul == 0 and n!= 12 and n != 20 and n != 24:
-            print("#define TEST_VLSEG1_OP_rd%d( testnum, inst, eew, base )"%n + " \\\n\
-                TEST_CASE_LOOP( testnum, v%d,  "%n + "\\\n\
-                    la  x2, base; \\\n\
-                    inst v%d, (x2); "%n + "\\\n\
-            ) ", file=f)
-
-def generate_macros_vlsseg(f, lmul, vsew, eew):
-    emul = eew / vsew * lmul
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    # testreg is v8
-    generate_vlsseg_macro(f, lmul)
-    for n in range(1, 32):
-        if n == 12 or n == 20 or n == 24 or n == 30: # signature base registers
-            continue
-        print("#define TEST_VLSSEG1_OP_1%d(  testnum, inst, eew, stride, base )"%n + " \\\n\
-            TEST_CASE_LOOP( testnum, v8,   \\\n\
-                la  x%d, base; "%n + "\\\n\
-                li  x30, stride; \\\n\
-                inst v8, (x%d), x30 ; "%n + "\\\n\
-        )", file=f)
-    for n in range(1, 32):
-        # Beacuse of the widening instruction, rd should valid for the destination’s EMUL
-        if n % emul == 0 and n % lmul == 0 and n!= 12 and n != 20 and n != 24:
-            print("#define TEST_VLSSEG1_OP_rd%d(  testnum, inst, eew, stride, base )"%n + " \\\n\
-                TEST_CASE_LOOP( testnum, v%d,   "%n + "\\\n\
-                    la  x1, base; \\\n\
-                    li  x2, stride; \\\n\
-                    inst v%d, (x1), x2; "%n + "\\\n\
-            ) ", file=f)
-    print("#define TEST_VLSSEG1_OP_130(  testnum, inst, eew, stride, base ) \\\n\
-            TEST_CASE_LOOP( testnum, v16,   \\\n\
-                la  x30, base; \\\n\
-                li  x3, stride; \\\n\
-                inst v16, (x30), x3 ; \\\n\
-        )", file=f)
-
 
 def generate_macros_vlxeiseg(f, lmul, vsew, eew):
     emul = eew / vsew * lmul
@@ -830,226 +961,6 @@ def generate_macros_vlxeiseg(f, lmul, vsew, eew):
             MK_VLE_INST(index_eew) v8, (x6);    \\\n\
             inst v30, (x1), v8 ;  \\\n\
         )",file=f)
-
-
-def generate_vsseg_macro(f, lmul):
-    print("\
-    #define TEST_VSSEG1_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \n\
-    #define TEST_VSSEG2_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d) "%(8+lmul) + " \n\
-    #define TEST_VSSEG3_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "\n", file=f)
-    
-    if 8+lmul*4 < 32:
-        print("#define TEST_VSSEG4_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \n", file=f)
-    
-    if 8+lmul*5 < 32:
-        print("#define TEST_VSSEG5_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + "\n", file=f)
-    
-    if 8+lmul*6 < 32:
-        print("#define TEST_VSSEG6_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + "\n", file=f)
-    
-    if 8+lmul*7 < 32:
-        print("#define TEST_VSSEG7_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + "\n", file=f)
-    
-    if 8+lmul*8 < 32:
-        print("#define TEST_VSSEG8_OP( testnum, load_inst, store_inst, eew,  base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*7) + " \n", file=f)
-
-
-def generate_vssseg_macro(f, lmul):
-    print("\
-    #define TEST_VSSSEG1_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \n\
-    #define TEST_VSSSEG2_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d) "%(8+lmul) + " \n\
-    #define TEST_VSSSEG3_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "\n", file=f)
-    
-    if 8+lmul*4 < 32:
-        print("#define TEST_VSSSEG4_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \n", file=f)
-    
-    if 8+lmul*5 < 32:
-        print("#define TEST_VSSSEG5_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + "\n", file=f)
-    
-    if 8+lmul*6 < 32:
-        print("#define TEST_VSSSEG6_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + "\n", file=f)
-    
-    if 8+lmul*7 < 32:
-        print("#define TEST_VSSSEG7_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + "\n", file=f)
-    
-    if 8+lmul*8 < 32:
-        print("#define TEST_VSSSEG8_OP( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v16, (x3); \\\n\
-            store_inst v16, (x1), x2; \\\n\
-            load_inst v8, (x1), x2;  \\\n\
-        ) \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*6) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+lmul*7) + " \n", file=f)
 
 
 def generate_vsuxseg_macro(f, lmul):
@@ -1236,44 +1147,6 @@ def generate_vsre_macro(f, lmul):
         print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + "\n", file=f)
 
 
-def generate_macros_vsseg(f, lmul, vsew, eew):
-    emul = eew / vsew * lmul
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    generate_vsseg_macro(f,lmul)
-    for n in range(1,30):
-        if n == 12 or n == 20 or n == 24 or n == 30: # signature base registers
-            continue
-        print("#define TEST_VSSEG1_OP_1%d( testnum, load_inst, store_inst, eew, base, source_addr )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16, \\\n\
-            la  x%d, base; "%n + " \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v8, (x2); \\\n\
-            store_inst v8, (x%d); "%n + "\\\n\
-            load_inst v16, (x%d); "%n + " \\\n\
-        )",file=f)
-
-    for n in range(1,31):
-        if n != 8 and n != 16 and n != 24:
-            continue
-        print("#define TEST_VSSEG1_OP_rd%d( testnum, load_inst, store_inst, eew, base, source_addr )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x1, base;  \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v%d, (x2); "%n + "\\\n\
-            store_inst v%d, (x1); "%n + " \\\n\
-            load_inst v16, (x1); \\\n\
-        )",file=f)
-
-    print("#define TEST_VSSEG1_OP_130( testnum, load_inst, store_inst, eew, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x30, base;  \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v8, (x2); \\\n\
-            store_inst v8, (x30); \\\n\
-            load_inst v16, (x30);  \\\n\
-        )",file=f)
-
 def generate_macros_vsuxseg(f, lmul, vsew, eew):
     emul = eew / vsew * lmul
     emul = 1 if emul < 1 else int(emul)
@@ -1316,57 +1189,6 @@ def generate_macros_vsuxseg(f, lmul, vsew, eew):
             MK_VLE_INST(index_eew) v24, (x6);    \\\n\
             store_inst v8, (x30), v24; \\\n\
             load_inst v16, (x30), v24; \\\n\
-        )",file=f)
-
-
-def generate_macros_vssseg(f, lmul, vsew, eew):
-    emul = eew / vsew * lmul
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    generate_vssseg_macro(f, lmul)
-    for n in range(1,29):
-        if n == 12 or n == 20 or n == 24 or n == 29 or n == 30: # signature base registers
-            continue
-        print("#define TEST_VSSSEG1_OP_1%d( testnum, load_inst, store_inst, eew, stride, base, source_addr  )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,   \\\n\
-            la  x%d, base; "%n + " \\\n\
-            li  x29, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v8, (x3); \\\n\
-            store_inst v8, (x%d), x29; "%n + "\\\n\
-            load_inst v16, (x%d), x29; "%n + " \\\n\
-        )",file=f)
-
-    for n in range(1,31):
-        if n != 8 and n != 16 and n != 24:
-            continue
-        print("#define TEST_VSSSEG1_OP_rd%d( testnum, load_inst, store_inst, eew, stride, base, source_addr  )"%n + " \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x1, base;  \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v%d, (x3);"%n + " \\\n\
-            store_inst v%d, (x1), x2; "%n + " \\\n\
-            load_inst v16, (x1), x2; \\\n\
-        )",file=f)
-
-    print("#define TEST_VSSSEG1_OP_130( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x30, base;  \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v8, (x3); \\\n\
-            store_inst v8, (x30), x2; \\\n\
-            load_inst v16, (x30), x2;  \\\n\
-        )",file=f)
-    print("#define TEST_VSSSEG1_OP_129( testnum, load_inst, store_inst, eew, stride, base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v16,  \\\n\
-            la  x29, base;  \\\n\
-            li  x2, stride; \\\n\
-            la  x3, source_addr; \\\n\
-            vl8re32.v v8, (x3); \\\n\
-            store_inst v8, (x29), x2; \\\n\
-            load_inst v16, (x29), x2;  \\\n\
         )",file=f)
 
 

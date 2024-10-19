@@ -46,12 +46,12 @@ def create_first_test_vse16(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_pa
     generate_macros_vse(f, lmul, vsew, 16)
 
     # Generate tests
-    n = generate_tests_vse(f, rs1_val, rs2_val, lmul, vsew, 16)
+    (n, footprint) = generate_tests_vse(f, rs1_val, rs2_val, lmul, vsew, 16)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f, 16, n, is_vse = True)
+    print_load_ending(f, 16, n, is_vse = True, seg = footprint)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
