@@ -1,0 +1,18 @@
+vsoxsegei64:
+    config: 
+      - check ISA:=regex(.*V.*)
+    opcode: 
+      vsoxseg2ei64.v: 0
+      vsoxseg3ei64.v: 0
+      vsoxseg4ei64.v: 0
+      vsoxseg5ei64.v: 0
+      vsoxseg6ei64.v: 0
+      vsoxseg7ei64.v: 0
+      vsoxseg8ei64.v: 0
+    rs1: 
+      <<: *all_regs_cropped
+    rd: 
+      <<: *v_octant_regs
+    val_comb:
+        'ea_align == 0': 0
+        'walking_ones("imm_val", 64)': 0

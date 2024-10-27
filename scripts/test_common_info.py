@@ -9,11 +9,15 @@ def get_mask_bit(index):
     return mask_data_ending[int(index / 32)] >> (index % 32) & 1
 
 
-def get_aligned_reg(reg, lmul_reg, lmul_target):
+def get_aligned_reg(reg, lmul_reg, lmul_target, nf = 1):
+    lmul_reg_1 = max(1, lmul_reg)
+    lmul_target_1 = max(1, lmul_target)
     for i in range(1, 32):
         if i % lmul_target != 0 or i == reg:
             continue
-        if (i > reg + lmul_reg - 1) or (i + lmul_target - 1 < reg):
+        if i + lmul_target_1 * nf > 32:
+            break
+        if (i > reg + lmul_reg_1 * nf - 1) or (i + lmul_target_1 * nf - 1 < reg):
             return i
     return 0
 

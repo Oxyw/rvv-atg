@@ -4,10 +4,10 @@ from scripts.create_test_loadstore.create_test_common import generate_macros_vsx
 from scripts.test_common_info import *
 import re
 
-instr = 'vsuxsegei8' # vsuxseg<nf>ei8
+instr = 'vsoxsegei16' # vsoxseg<nf>ei16
 
 
-def create_empty_test_vsuxsegei8(xlen, vlen, vsew, lmul, vta, vma, output_dir):
+def create_empty_test_vsoxsegei16(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     logging.info("Creating empty test for {}".format(instr))
 
     path = "%s/%s_empty.S" % (output_dir, instr)
@@ -19,7 +19,7 @@ def create_empty_test_vsuxsegei8(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     # Common const information
 
     # Load const information
-    print_load_ending(f, 8, print_idx = True)
+    print_load_ending(f, 16, print_idx = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -30,7 +30,7 @@ def create_empty_test_vsuxsegei8(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     return path
 
 
-def create_first_test_vsuxsegei8(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
+def create_first_test_vsoxsegei16(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
     logging.info("Creating first test for {}".format(instr))
 
     path = "%s/%s_first.S" % (output_dir, instr)
@@ -43,15 +43,15 @@ def create_first_test_vsuxsegei8(xlen, vlen, vsew, lmul, vta, vma, output_dir, r
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vsxsegei(f, lmul, vsew, 8)
+    generate_macros_vsxsegei(f, lmul, vsew, 16)
 
     # Generate tests
-    (n, rnd) = generate_tests_vsxsegei(f, 'vsuxseg', 'vluxseg', rs1_val, rs2_val, lmul, vsew, 8)
+    (n, rnd) = generate_tests_vsxsegei(f, 'vsoxseg', 'vluxseg', rs1_val, rs2_val, lmul, vsew, 16)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f, 8, n, print_idx = True, seg = rnd)
+    print_load_ending(f, 16, n, print_idx = True, seg = rnd)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

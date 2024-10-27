@@ -184,6 +184,11 @@ from scripts.create_test_loadstore.create_test_vloxei64 import *
 from scripts.create_test_loadstore.create_test_vluxsegei8 import *
 from scripts.create_test_loadstore.create_test_vluxsegei16 import *
 from scripts.create_test_loadstore.create_test_vluxsegei32 import *
+from scripts.create_test_loadstore.create_test_vluxsegei64 import *
+from scripts.create_test_loadstore.create_test_vloxsegei8 import *
+from scripts.create_test_loadstore.create_test_vloxsegei16 import *
+from scripts.create_test_loadstore.create_test_vloxsegei32 import *
+from scripts.create_test_loadstore.create_test_vloxsegei64 import *
 
 # #store
 from scripts.create_test_loadstore.create_test_vse8 import *
@@ -214,4 +219,8 @@ from scripts.create_test_loadstore.create_test_vsoxei64 import *
 from scripts.create_test_loadstore.create_test_vsuxsegei8 import *
 from scripts.create_test_loadstore.create_test_vsuxsegei16 import *
 from scripts.create_test_loadstore.create_test_vsuxsegei32 import *
-
+from scripts.create_test_loadstore.create_test_vsuxsegei64 import *
+from scripts.create_test_loadstore.create_test_vsoxsegei8 import *
+from scripts.create_test_loadstore.create_test_vsoxsegei16 import *
+from scripts.create_test_loadstore.create_test_vsoxsegei32 import *
+from scripts.create_test_loadstore.create_test_vsoxsegei64 import *

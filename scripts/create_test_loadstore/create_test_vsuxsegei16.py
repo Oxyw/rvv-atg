@@ -1,129 +1,62 @@
 import logging
 import os
-from scripts.create_test_loadstore.create_test_common import generate_macros_vsuxseg
+from scripts.create_test_loadstore.create_test_common import generate_macros_vsxsegei, generate_tests_vsxsegei
 from scripts.test_common_info import *
 import re
 
-name = 'vsuxsegei16'
-
-instr = 'vsuxseg2ei16'
-instr1 = 'vluxseg2ei16'
-instr2 = 'vsuxseg3ei16' 
-instr2l = 'vluxseg3ei16'
-instr3 = 'vsuxseg4ei16' 
-instr3l = 'vluxseg4ei16'
-instr4 = 'vsuxseg5ei16' 
-instr4l = 'vluxseg5ei16'
-instr5 = 'vsuxseg6ei16' 
-instr5l = 'vluxseg6ei16'
-instr6 = 'vsuxseg7ei16' 
-instr6l = 'vluxseg7ei16'
-instr7 = 'vsuxseg8ei16' 
-instr7l = 'vluxseg8ei16' 
-
-def generate_tests(f, rs1_val, rs2_val, vsew, lmul):
-    emul = 16 / vsew * lmul
-    if emul < 0.125 or emul > 8:
-        return 0
-    emul = 1 if emul < 1 else int(emul)
-    lmul = 1 if lmul < 1 else int(lmul)
-    n = 0
-    print("  #-------------------------------------------------------------", file=f)
-    print("  # VV Tests", file=f)
-    print("  #-------------------------------------------------------------", file=f)
-
-    for i in range(2):
-        if 2 * lmul <= 8 and 2 + 2 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG1_OP( "+str(n)+", %s.v, %s.v, "%(instr1,instr)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        if 3 * lmul <= 8 and 8 + 3 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr2l,instr2)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        if 4 * lmul <= 8 and 8 + 4 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr3l,instr3)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        if 5 * lmul <= 8 and 8 + 5 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr4l,instr4)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        if 6 * lmul <= 8 and 8 + 6 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr5l,instr5)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        if 7 * lmul <= 8 and 8 + 7 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr6l,instr6)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        if 8 * lmul <= 8 and 8 + 8 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr7l,instr7)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-            n += 1
-            print("   TEST_VSXSEG3_OP( "+str(n)+", %s.v, %s.v, "%(instr7l,instr7)+"16"+", "+"32 + tdat"+", "+"idx16dat"+", rd_origin_data);", file=f)
-        
-    if 2 * lmul <= 8 and 2 + 2 * lmul <= 32: # (nf * lmul) <= (NVPR / 4) &&  (insn.rd() + nf * lmul) <= NVPR);
-        for i in range(100):     
-            k = i%30+1
-            if k == 8 or k == 16 or k == 24:
-                n += 1
-                print("   TEST_VSXSEG1_OP_rd%d( "%k+str(n)+",  %s.v, %s.v, "%(instr1,instr)+"16"+", "+"0 + tdat"+", "+"idx16dat"+", rd_origin_data);",file=f)
-        
-            k = i%30+2
-            if(k == 31 or k == 12 or k == 20 or k == 24):
-                continue;
-            n += 1
-            print("    TEST_VSXSEG1_OP_1%d( "%k+str(n)+",  %s.v, %s.v, "%(instr1,instr)+"16"+", "+"-12 + tdat4"+", "+"idx16dat"+", rd_origin_data);",file=f)
-    return n
-
+instr = 'vsuxsegei16' # vsuxseg<nf>ei16
 
 
 def create_empty_test_vsuxsegei16(xlen, vlen, vsew, lmul, vta, vma, output_dir):
-    logging.info("Creating empty test for {}".format(name))
+    logging.info("Creating empty test for {}".format(instr))
 
-    path = "%s/%s_empty.S" % (output_dir, name)
+    path = "%s/%s_empty.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
-
+    print_common_header(instr, f)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f)
+    print_load_ending(f, 16, print_idx = True)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating empty test for {}: finish in {}!".format(name, path))
+        "Creating empty test for {}: finish in {}!".format(instr, path))
 
     return path
 
 
 def create_first_test_vsuxsegei16(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
-    logging.info("Creating first test for {}".format(name))
+    logging.info("Creating first test for {}".format(instr))
 
-    path = "%s/%s_first.S" % (output_dir, name)
+    path = "%s/%s_first.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
+    print_common_header(instr, f)
 
     # Extract operands
     rs1_val, rs2_val = extract_operands(f, rpt_path)
 
     # Generate macros to test diffrent register
-    generate_macros_vsuxseg(f, lmul, vsew, 8)
+    generate_macros_vsxsegei(f, lmul, vsew, 16)
 
     # Generate tests
-    n = generate_tests(f, rs1_val, rs2_val, vsew, lmul)
+    (n, rnd) = generate_tests_vsxsegei(f, 'vsuxseg', 'vluxseg', rs1_val, rs2_val, lmul, vsew, 16)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f, n)
+    print_load_ending(f, 16, n, print_idx = True, seg = rnd)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating first test for {}: finish in {}!".format(name, path))
+        "Creating first test for {}: finish in {}!".format(instr, path))
 
     return path
