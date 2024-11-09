@@ -114,6 +114,22 @@ test_##testnum: \
     bne x31, x30, 1b;                               \
     addi x20, x20, -REGWIDTH;
 
+#define TEST_CASE_LOOP_EEW_EMUL(testnum, testreg, emul, code...) \
+test_##testnum: \
+    VSET_VSEW_4AVL                                               \
+    code;                                                        \
+    XFVCSR_SIGUPD                                                \
+    VSET_EEW_EMUL##emul                                          \
+    csrr x31, vstart;                                            \
+    csrr x30, vl;                                                \
+    li TESTNUM, testnum;                                         \
+1 : VECTOR_RVTEST_SIGUPD(x20, testreg);                          \
+    addi x20, x20, REGWIDTH;                                     \
+    addi x31, x31, 1;                                            \
+    vslidedown.vi testreg, testreg, 1;                           \
+    bne x31, x30, 1b;                                            \
+    addi x20, x20, -REGWIDTH;
+
 
 #define TEST_CASE_LOOP( testnum, testreg, code...) \
 test_ ## testnum: \
@@ -205,60 +221,3 @@ test_ ## testnum: \
     vslidedown.vi testreg, testreg, 1; \
     bne x31, x30, 1b; \
     addi x20, x20, -REGWIDTH; \
-
-
-//-----------------------------------------------------------------------
-// Tests for Load Store instructions
-//-----------------------------------------------------------------------
-
-// For simplicity, all vlre/vsre test use 2 fields
-#define TEST_CASE_VLRE( testnum, eew, correctval1, correctval2, code... ) \
-test_ ## testnum: \
-    code; \
-    XFVCSR_SIGUPD \
-    li x7, MASK_EEW(correctval1, eew); \
-    li x8, MASK_EEW(correctval2, eew); \
-    li TESTNUM, testnum; \
-    vsetivli x31, 1, MK_EEW(eew), tu, mu; \
-    VMVXS_AND_MASK_EEW( x14, v16, eew ) \
-    VMVXS_AND_MASK_EEW( x15, v17, eew ) \
-    VSET_VSEW \
-    VECTOR_RVTEST_SIGUPD(x20, v16); \
-    VECTOR_RVTEST_SIGUPD(x20, v17);
-
-
-#define TEST_VLRE2_OP( testnum, inst, eew, result1, result2, base ) \
-  TEST_CASE_VLRE( testnum, eew, result1, result2,  \
-    la  x1, base; \
-    inst v16, (x1); \
-  )
-
-#define TEST_VLRE1_OP( testnum, inst, eew, base ) \
-  TEST_CASE_LOOP( testnum, v16, \
-    la  x1, base; \
-    inst v16, (x1); \
-  )
-
-
-#define TEST_VSRE2_OP( testnum, load_inst, store_inst, eew, result1, result2, base ) \
-  TEST_CASE_VLRE( testnum, eew, result1, result2,  \
-    la  x1, base; \
-    li x7, MASK_EEW(result1, eew); \
-    li x8, MASK_EEW(result2, eew); \
-    vsetivli x31, 1, MK_EEW(eew), m1, tu, mu; \
-    vmv.v.x v8, x7; \
-    vmv.v.x v9, x8; \
-    VSET_VSEW \
-    store_inst v8, (x1); \
-    load_inst v16, (x1); \
-  )
-
-#define TEST_VSRE1_OP( testnum, load_inst, store_inst, eew, result, base ) \
-  TEST_CASE_LOOP( testnum, v16,  \
-    la  x1, base; \
-    li x7, MASK_EEW(result, eew); \
-    vmv.v.x v8, x7; \
-    VSET_VSEW \
-    store_inst v8, (x1); \
-    load_inst v16, (x1); \
-  )

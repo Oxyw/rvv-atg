@@ -1,0 +1,16 @@
+vlre64:
+    config: 
+      - check ISA:=regex(.*V.*)
+    opcode: 
+      vl1re64.v: 0
+      vl2re64.v: 0
+      vl4re64.v: 0
+      vl8re64.v: 0
+    rs1: 
+      <<: *all_regs_cropped
+    rd: 
+      <<: *v_octant_regs
+    val_comb:
+        'ea_align == 0': 0
+        'imm_val == 0': 0
+        'walking_ones("imm_val", 64)': 0

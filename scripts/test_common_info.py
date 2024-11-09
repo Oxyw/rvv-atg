@@ -9,6 +9,10 @@ def get_mask_bit(index):
     return mask_data_ending[int(index / 32)] >> (index % 32) & 1
 
 
+def is_aligned(val, pos):
+    return (val & (pos - 1) == 0) if pos else True
+
+
 def get_aligned_reg(reg, lmul_reg, lmul_target, nf = 1):
     lmul_reg_1 = max(1, lmul_reg)
     lmul_target_1 = max(1, lmul_target)
@@ -170,15 +174,20 @@ def print_common_ending(f, test_num = 0, print_data = False):
     print_rvmodel_data(arr, f)
 
 
-def gen_arr_load(n, eew, is_vse = False, seg = 1):
+def gen_arr_load(n, eew, is_vse = False, is_vsr = False, is_vlr = False, seg = 1):
     vlen = int(os.environ['RVV_ATG_VLEN'])
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = int(os.environ['RVV_ATG_VSEW'])
-    elem_num = int(vlen * lmul / vsew)
     xfvcsr_num = 11  # 1 xcsr, 3 fcsr, 7 vcsr
     if is_vse: # vse<eew> and vsseg<nf>e<eew>
         arr = [seg, xfvcsr_num * n, 0]
+    elif is_vsr: # vs<nf>r
+        arr = [0, xfvcsr_num * n, seg]
+    elif is_vlr: # vl<nf>re<eew>
+        vl = int(vlen / eew)
+        arr = [0, vl * seg + xfvcsr_num * n, 0]
     else:
+        elem_num = int(vlen * lmul / vsew)
         if seg == 1:
             arr = [0, elem_num * n + xfvcsr_num * n, 0]
         else:
@@ -278,7 +287,7 @@ def print_data_width_prefix(f, vsew):
         print(".dword", end="\t", file=f)
 
 
-def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False, seg = 1):
+def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False, is_vsr = False, is_vlr = False, seg = 1):
     print("#endif\n\
     \n\
     RVTEST_CODE_END\n\
@@ -342,59 +351,7 @@ def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False, seg = 1)
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
-    arr = gen_arr_load(n, eew, is_vse = is_vse, seg = seg)
-    print_rvmodel_data(arr, f)
-
-
-def print_loadlr_ending(f, n = 0):
-    print("#endif\n\
-    \n\
-    RVTEST_CODE_END\n\
-    RVMODEL_HALT\n\
-    \n\
-    .data\n\
-    RVTEST_DATA_BEGIN\n\
-    \n\
-    TEST_DATA\n\
-    \n\
-    .type tdat, @object\n\
-    .size tdat, 8448\n\
-    .align 8 \n\
-    tdat:\n\
-    tdat1:  .word 0x00ff00ff\n\
-    tdat2:  .word 0xff00ff00\n\
-    tdat3:  .word 0x0ff00ff0\n\
-    tdat4:  .word 0xf00ff00f\n\
-    tdat5:  .word 0x00ff00ff\n\
-    tdat6:  .word 0xff00ff00\n\
-    tdat7:  .word 0x0ff00ff0\n\
-    tdat8:  .word 0xf00ff00f\n\
-    tdta28:  .zero 7584\n\
-    tdat9:  .zero 32\n\
-    tdat10:  .word 0x00ff00ff\n\
-    tdat11:  .word 0xff00ff00\n\
-    tdat12:  .word 0x0ff00ff0\n\
-    tdat13:  .word 0xf00ff00f\n\
-    tdat14:  .word 0x00ff00ff\n\
-    tdat15:  .word 0xff00ff00\n\
-    tdat16:  .word 0x0ff00ff0\n\
-    tdat17:  .word 0xf00ff00f\n\
-    tdta18:  .zero 32\n\
-    tdat19:  .word 0x00ff00ff\n\
-    tdat20:  .word 0xff00ff00\n\
-    tdat21:  .word 0x0ff00ff0\n\
-    tdat22:  .word 0xf00ff00f\n\
-    tdat23:  .word 0x00ff00ff\n\
-    tdat24:  .word 0xff00ff00\n\
-    tdat25:  .word 0x0ff00ff0\n\
-    tdat26:  .word 0xf00ff00f\n\
-    tdta27:  .zero 32\n\
-    \n", file=f)
-    print_mask_origin_data_ending_fixed(f)
-    print("\n\
-    RVTEST_DATA_END\n\
-    \n", file=f)
-    arr = gen_arr_load(n)
+    arr = gen_arr_load(n, eew, is_vse = is_vse, is_vsr = is_vsr, is_vlr = is_vlr, seg = seg)
     print_rvmodel_data(arr, f)
 
 

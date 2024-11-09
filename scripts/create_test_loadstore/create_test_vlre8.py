@@ -1,69 +1,58 @@
 import logging
 import os
-import numpy as np
-from scripts.create_test_loadstore.create_test_common import *
+from scripts.create_test_loadstore.create_test_common import generate_macros_vlre, generate_tests_vlre
 from scripts.test_common_info import *
-import re
 
+instr = 'vlre8' # vl<nf>re8
 
-name = 'vlre8'
-instr = 'vl1re8'
-instr1 = 'vl2re8'
-instr2 = 'vl4re8'
-instr3 = 'vl8re8'
-instr4 = 'vl2r'
 
 def create_empty_test_vlre8(xlen, vlen, vsew, lmul, vta, vma, output_dir):
-    logging.info("Creating empty test for {}".format(name))
+    logging.info("Creating empty test for {}".format(instr))
 
-    path = "%s/%s_empty.S" % (output_dir, name)
+    path = "%s/%s_empty.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
-
+    print_common_header(instr, f)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f)
+    print_load_ending(f, 8)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating empty test for {}: finish in {}!".format(name, path))
+        "Creating empty test for {}: finish in {}!".format(instr, path))
 
     return path
 
 
 def create_first_test_vlre8(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
-    logging.info("Creating first test for {}".format(name))
+    logging.info("Creating first test for {}".format(instr))
 
-    path = "%s/%s_first.S" % (output_dir, name)
+    path = "%s/%s_first.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
-
-    # Extract operands
-    rs1_val, rs2_val = extract_operands(f, rpt_path)
+    print_common_header(instr, f)
      
     # Generate macros to test diffrent register
-    generate_vlre_macro(f, lmul)
+    generate_macros_vlre(f, 8)
     
     # Generate tests
-    n = generate_tests_vlre(f, vsew, 8, lmul)
+    (n, vr_num) = generate_tests_vlre(f, 8)
 
     # Common const information
 
     # Load const information
-    print_loadlr_ending(f, n)
+    print_load_ending(f, 8, n, is_vlr = True, seg = vr_num)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating first test for {}: finish in {}!".format(name, path))
+        "Creating first test for {}: finish in {}!".format(instr, path))
 
     return path

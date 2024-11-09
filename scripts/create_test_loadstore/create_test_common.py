@@ -1,5 +1,5 @@
 import os
-from scripts.test_common_info import get_aligned_reg
+from scripts.test_common_info import get_aligned_reg, is_aligned
 
 
 sreg = "x20" # signature register
@@ -76,7 +76,6 @@ def generate_macros_vse(f, lmul, vsew, eew):
         print("emul is out of range!")
         return 0
     vlen = int(os.environ['RVV_ATG_VLEN'])
-    xlen = int(os.environ['RVV_ATG_XLEN'])
     # TODO
     num_bytes = emul * vlen // 8
     num_bytes = align_up(num_bytes)
@@ -1019,176 +1018,54 @@ def generate_tests_vsxsegei(f, name, name_l, rs1_val, rs2_val, lmul, vsew, eew):
     return (n, rnd)
 
 
-def generate_vlre_macro(f, lmul):
-    print("\
-    #define TEST_VLRE1_OP( testnum, inst,  base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \n", file=f)
+def generate_macros_vlre(f, eew):
+    nf_list = [1, 2, 4, 8]
+    for nf in nf_list:
+        VSET_EEW_EMUL = get_vset_eew_emul(eew, nf)
+        print("#define VSET_EEW_EMUL%d %s\n"%(nf, VSET_EEW_EMUL), file=f)
     
-    print("#define TEST_VLRE2_OP( testnum, inst,  base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\", file=f)
-    if lmul <= 1:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d) "%(8+1) + " \n", file=f)
-    print("", file=f)
-    
-    print("#define TEST_VLRE4_OP( testnum, inst,  base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\", file=f)
-    if lmul <= 1:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*1) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*3) + " \n", file=f)
-    elif lmul == 2:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + " \n", file=f)
-    print("", file=f)
-    
-    
-    print("#define TEST_VLRE8_OP( testnum, inst,  base ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            inst v8, (x1); \\\n\
-        ) \\", file=f)
-    if lmul <= 1:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*6) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*7) + " \n", file=f)
-    elif lmul == 2:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*6) + "\n", file=f)
-    elif lmul == 4:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + "\n", file=f)
+    for nf in nf_list:
+        print("#define TEST_VL%dRE_OP( testnum, inst, base )"%(nf) + " \\\n\
+        TEST_CASE_LOOP_EEW_EMUL( testnum, v8, %d, "%(nf) + " \\\n\
+            la  x7, base; \\\n\
+            inst v8, (x7); \\\n\
+        )", file=f)
+        for n in range(1, 32):
+            if not is_aligned(n, nf):
+                continue
+            print("#define TEST_VL%dRE_OP_vd_%d( testnum, inst, base )"%(nf, n) + " \\\n\
+            TEST_CASE_LOOP_EEW_EMUL( testnum, v%d, %d, "%(n, nf) + " \\\n\
+                la  x7, base; \\\n\
+                inst v%d, (x7); "%n + "\\\n\
+            )", file=f)
 
 
-def generate_vsre_macro(f, lmul):
-    print("\
-    #define TEST_VSRE1_OP( testnum, load_inst, store_inst,   base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \n\
-    #define TEST_VSRE2_OP( testnum, load_inst, store_inst,   base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\", file=f)
-    if lmul <= 1:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d) "%(8+1) + " \n", file=f)
-    print("", file=f)
+def generate_tests_vlre(f, eew):
+    nf_list = [1, 2, 4, 8]
     
-    print("#define TEST_VSRE4_OP( testnum, load_inst, store_inst,   base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\", file=f)
-    if lmul <= 1:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*1) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + "  \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*3) + " \n", file=f)
-    elif lmul == 2:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + " \n", file=f)
-    print("", file=f)
-    
-    print("#define TEST_VSRE8_OP( testnum, load_inst, store_inst,   base, source_addr ) \\\n\
-        TEST_CASE_LOOP( testnum, v8,   \\\n\
-            la  x1, base; \\\n\
-            la  x2, source_addr; \\\n\
-            vl8re32.v v16, (x2); \\\n\
-            store_inst v16, (x1); \\\n\
-            load_inst v8, (x1);  \\\n\
-        ) \\", file=f)
-    if lmul <= 1:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*1) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*3) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*5) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*6) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*7) + " \n", file=f)
-    elif lmul == 2:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*2) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + " \\\n\
-        TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*6) + "\n", file=f)
-    elif lmul == 4:
-        print("TEST_CASE_LOOP_CONTINUE( testnum, v%d)"%(8+1*4) + "\n", file=f)
-
-
-def generate_tests_vlre(f, vsew , eew, lmul):
-    emul = eew / vsew * lmul
-    if emul < 0.125 or emul > 8:
-        return 0
-    emul = 1 if emul < 1 else int(emul)
     n = 0
-    instr1 = "vl1re%d"%(eew)
-    instr2 = "vl2re%d"%(eew)
-    instr4 = "vl4re%d"%(eew)
-    instr8 = "vl8re%d"%(eew)
+    vr_num = 0
     print("  #-------------------------------------------------------------", file=f)
-    print("  # VV Tests", file=f)
+    print("  # vl<nf>re%d Tests"%eew, file=f)
     print("  #-------------------------------------------------------------", file=f)
 
     for i in range(2):
-        n += 1
-        print("  TEST_VLRE1_OP( "+str(n)+",  %s.v, " %instr1+"0 + tdat"+" );", file=f)
-        n += 1
-        print("  TEST_VLRE2_OP( "+str(n)+",  %s.v, " %instr2+"16 + tdat"+" );", file=f)
-        n += 1
-        print("  TEST_VLRE4_OP( "+str(n)+",  %s.v, " %instr4+"-12 + tdat4"+" );", file=f)
-        n += 1
-        print("  TEST_VLRE8_OP( "+str(n)+",  %s.v, " %instr8+"0 + tdat5"+" );", file=f)
-        n += 1
-        print("  TEST_VLRE2_OP( "+str(n)+",  %s.v, " %instr2+"0 + tdat"+" );", file=f)
-        n += 1
-        print("  TEST_VLRE8_OP( "+str(n)+",  %s.v, " %instr8+"4096 + tdat5"+" );", file=f)
-
-    return n
-
-
-def generate_tests_vsre(f, vsew , lmul):
-    n = 0
+        for nf in nf_list:
+            instr = "vl%dre%d"%(nf, eew)
+            n += 1
+            print("  TEST_VL%dRE_OP( "%nf+str(n)+",  %s.v, " %instr+"0 + tdat"+" );", file=f)
+            vr_num += nf
+            n += 1
+            print("  TEST_VL%dRE_OP( "%nf+str(n)+",  %s.v, " %instr+"%d + tdat"%(eew//8)+" );", file=f)
+            vr_num += nf
     
-    list = [8, 16, 32, 64]
-    load_ins_eew = 32
-    for i in range(4):
-        emul = list[i] / vsew * lmul
-        if emul >= 0.125 and emul <= 8:
-            load_ins_eew = list[i]
-            break
+    for nf in nf_list:
+        for i in range(1, 32):
+            if not is_aligned(i, nf):
+                continue
+            instr = "vl%dre%d"%(nf, eew)
+            n += 1
+            print("  TEST_VL%dRE_OP_vd_%d( "%(nf, i)+str(n)+",  %s.v, " %instr+"0 + tdat"+" );", file=f)
+            vr_num += nf
 
-    print("  #-------------------------------------------------------------", file=f)
-    print("  # VV Tests", file=f)
-    print("  #-------------------------------------------------------------", file=f)
-
-    for i in range(2):
-        n += 1
-        print("  TEST_VSRE1_OP( "+str(n)+", vl1re%d.v, vs1r.v, "%load_ins_eew +"0 + tdat"+" , mask_data );", file=f)
-        n += 1
-        print("  TEST_VSRE2_OP( "+str(n)+", vl2re%d.v, vs2r.v, "%load_ins_eew +"16 + tdat"+" , mask_data );", file=f)
-        n += 1
-        print("  TEST_VSRE4_OP( "+str(n)+", vl4re%d.v, vs4r.v, "%load_ins_eew +"-12 + tdat4"+" , mask_data );", file=f)
-        n += 1
-        print("  TEST_VSRE8_OP( "+str(n)+", vl8re%d.v, vs8r.v, "%load_ins_eew +"0 + tdat5"+" , mask_data );", file=f)
-        n += 1
-        print("  TEST_VSRE8_OP( "+str(n)+", vl8re%d.v, vs8r.v, "%load_ins_eew +"4096 + tdat5"+" , mask_data );", file=f)
-
-    return n
+    return (n, vr_num)

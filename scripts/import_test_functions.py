@@ -165,6 +165,7 @@ from scripts.create_test_loadstore.create_test_vlse32 import *
 from scripts.create_test_loadstore.create_test_vlre8 import *
 from scripts.create_test_loadstore.create_test_vlre16 import *
 from scripts.create_test_loadstore.create_test_vlre32 import *
+from scripts.create_test_loadstore.create_test_vlre64 import *
 from scripts.create_test_loadstore.create_test_vlsege8 import *
 from scripts.create_test_loadstore.create_test_vlsege16 import *
 from scripts.create_test_loadstore.create_test_vlsege32 import *
@@ -195,7 +196,7 @@ from scripts.create_test_loadstore.create_test_vse8 import *
 from scripts.create_test_loadstore.create_test_vse16 import *
 from scripts.create_test_loadstore.create_test_vse32 import *
 from scripts.create_test_loadstore.create_test_vse64 import *
-from scripts.create_test_loadstore.create_test_vsre import *
+from scripts.create_test_loadstore.create_test_vsr import *
 from scripts.create_test_loadstore.create_test_vsse8 import *
 from scripts.create_test_loadstore.create_test_vsse16 import *
 from scripts.create_test_loadstore.create_test_vsse32 import *

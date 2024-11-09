@@ -1,64 +1,58 @@
 import logging
 import os
+from scripts.create_test_loadstore.create_test_common import generate_macros_vlre, generate_tests_vlre
 from scripts.test_common_info import *
-from scripts.create_test_loadstore.create_test_common import *
-import re
-import numpy as np
 
-name = 'vlre32'
-instr = 'vl1re32'
-instr1 = 'vl2re32'
-instr2 = 'vl4re32'
-instr3 = 'vl8re32'
+instr = 'vlre32' # vl<nf>re32
+
 
 def create_empty_test_vlre32(xlen, vlen, vsew, lmul, vta, vma, output_dir):
-    logging.info("Creating empty test for {}".format(name))
+    logging.info("Creating empty test for {}".format(instr))
 
-    path = "%s/%s_empty.S" % (output_dir, name)
+    path = "%s/%s_empty.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
-
+    print_common_header(instr, f)
 
     # Common const information
 
     # Load const information
-    print_loadlr_ending(f)
+    print_load_ending(f, 32)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating empty test for {}: finish in {}!".format(name, path))
+        "Creating empty test for {}: finish in {}!".format(instr, path))
 
     return path
 
 
 def create_first_test_vlre32(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
-    logging.info("Creating first test for {}".format(name))
+    logging.info("Creating first test for {}".format(instr))
 
-    path = "%s/%s_first.S" % (output_dir, name)
+    path = "%s/%s_first.S" % (output_dir, instr)
     f = open(path, "w+")
 
     # Common header files
-    print_common_header(name, f)
-
+    print_common_header(instr, f)
+     
     # Generate macros to test diffrent register
-    generate_vlre_macro(f, lmul)
+    generate_macros_vlre(f, 32)
     
     # Generate tests
-    n = generate_tests_vlre(f, vsew, 32, lmul)
+    (n, vr_num) = generate_tests_vlre(f, 32)
 
     # Common const information
 
     # Load const information
-    print_loadlr_ending(f, n)
+    print_load_ending(f, 32, n, is_vlr = True, seg = vr_num)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
 
     logging.info(
-        "Creating first test for {}: finish in {}!".format(name, path))
+        "Creating first test for {}: finish in {}!".format(instr, path))
 
     return path

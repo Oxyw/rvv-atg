@@ -3,10 +3,10 @@ import os
 from scripts.create_test_loadstore.create_test_common import generate_macros_vlre, generate_tests_vlre
 from scripts.test_common_info import *
 
-instr = 'vlre16' # vl<nf>re16
+instr = 'vlre64' # vl<nf>re64
 
 
-def create_empty_test_vlre16(xlen, vlen, vsew, lmul, vta, vma, output_dir):
+def create_empty_test_vlre64(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     logging.info("Creating empty test for {}".format(instr))
 
     path = "%s/%s_empty.S" % (output_dir, instr)
@@ -18,7 +18,7 @@ def create_empty_test_vlre16(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     # Common const information
 
     # Load const information
-    print_load_ending(f, 16)
+    print_load_ending(f, 64)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))
@@ -29,7 +29,7 @@ def create_empty_test_vlre16(xlen, vlen, vsew, lmul, vta, vma, output_dir):
     return path
 
 
-def create_first_test_vlre16(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
+def create_first_test_vlre64(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_path):
     logging.info("Creating first test for {}".format(instr))
 
     path = "%s/%s_first.S" % (output_dir, instr)
@@ -39,15 +39,15 @@ def create_first_test_vlre16(xlen, vlen, vsew, lmul, vta, vma, output_dir, rpt_p
     print_common_header(instr, f)
      
     # Generate macros to test diffrent register
-    generate_macros_vlre(f, 16)
+    generate_macros_vlre(f, 64)
     
     # Generate tests
-    (n, vr_num) = generate_tests_vlre(f, 16)
+    (n, vr_num) = generate_tests_vlre(f, 64)
 
     # Common const information
 
     # Load const information
-    print_load_ending(f, 16, n, is_vlr = True, seg = vr_num)
+    print_load_ending(f, 64, n, is_vlr = True, seg = vr_num)
 
     f.close()
     os.system("cp %s %s" % (path, output_dir))

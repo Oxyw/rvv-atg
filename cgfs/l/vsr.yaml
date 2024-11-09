@@ -1,4 +1,4 @@
-vsre:
+vsr:
     config: 
       - check ISA:=regex(.*V.*)
     opcode: 
