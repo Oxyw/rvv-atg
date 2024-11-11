@@ -153,24 +153,6 @@ def run_loadstore(cwd, args, cgf, output_dir):
         output_dir, first_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul)
 
 
-def run_loadstore_new(cwd, args, cgf, output_dir):
-    # 1. Create empty test file
-    empty_test = create_empty_test(
-        args.i, args.xlen, args.vlen, args.vsew, args.lmul, args.vta, args.vma, output_dir)
-
-    # 2. Or run spike to generate commit info log
-    spike_first_log = run_spike(args.i, cwd, 
-                output_dir, empty_test, 'first', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul, )
-
-    # 3. Run final riscof coverage
-    (rpt_final, isac_log_final) = run_riscof_coverage(args.i, cwd, cgf,
-                                                      output_dir, empty_test, 'final', args.xlen, args.flen, args.vlen, args.elen, args.vsew, args.lmul,  tool='spike')
-
-    check_spikelog(output_dir, args.i)
-
-
-
-
 def main():
     # Full path of current dir
     cwd = os.path.dirname(os.path.realpath(__file__))
@@ -204,11 +186,6 @@ def main():
     elif args.t == "p":
         run_permutation(cwd, args, cgf, output_dir)
     elif args.t == "l":
-        # TODO: new load store
-        # if args.i in ["vlssege8", "vlssege16", "vlssege32", "vlssege64"]:
-        #     run_loadstore_new(cwd, args, cgf, output_dir)
-        # else:
-        #     run_loadstore(cwd, args, cgf, output_dir)
         run_loadstore(cwd, args, cgf, output_dir)
 
 

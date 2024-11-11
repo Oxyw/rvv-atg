@@ -9,6 +9,10 @@ def get_mask_bit(index):
     return mask_data_ending[int(index / 32)] >> (index % 32) & 1
 
 
+def is_overlap(rd, rd_mul, rs, rs_mul):
+    return ((rd <= rs + rs_mul - 1) and (rd + rd_mul - 1 >= rs))
+
+
 def is_aligned(val, pos):
     return (val & (pos - 1) == 0) if pos else True
 
@@ -273,8 +277,6 @@ def extract_operands_fp(f, rpt_path):
     
     return rs1_val, rs2_val
 
-def is_overlap(rd, rd_mul, rs, rs_mul):
-    return not ((rd > rs + rs_mul - 1) or (rd + rd_mul - 1 < rs))
 
 def print_data_width_prefix(f, vsew):
     if vsew == 8:
