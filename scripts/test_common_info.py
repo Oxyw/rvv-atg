@@ -349,7 +349,9 @@ def print_load_ending(f, eew, n = 0, print_idx = False, is_vse = False, is_vsr =
     if print_idx:
         generate_idx_data(f, eew)
     
-    print_mask_origin_data_ending_fixed(f)
+    if not(is_vsr or is_vlr):
+        print_mask_origin_data_ending(f)
+    
     print("\n\
     RVTEST_DATA_END\n\
     \n", file=f)
@@ -368,7 +370,7 @@ def print_mask_origin_data_ending(f):
     lmul = float(os.environ['RVV_ATG_LMUL'])
     vsew = float(os.environ['RVV_ATG_VSEW'])
     num_elem = int(vlen * lmul / vsew)
-    step_bytes = int(vlen * lmul / 8)
+    step_bytes = int(vlen) # max lmul = 8, int(vlen * 8 / 8)
     print_mask_data_ending(f, num_elem)
     print_origin_data_ending(f, step_bytes)
 
