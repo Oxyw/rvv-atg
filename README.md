@@ -6,19 +6,15 @@ NOTE: Test format conforms to RVV v1.0 spec.
 
 This repository has two available branches:
 
-- `master`: generates tests that contain self-checking.
-
 - `new_test_format`: generates tests that are used for the RISCOF framework (no self-checking, use signature for verification).
 
-The test content is the same in both of them.
+- `master`: generates tests that contain self-checking. [stale]
+
 
 ## Prerequisite
 
 1. RVV Compiler
-   1. Set `gcc`,`objdump`, and `riscof` directory's path variables in file: `scripts/constants.py`
-
-1. VLEN config
-    1. `scripts/create_test_floating/create_test_common.py` `_vlen =` change  it to your vlen
+   1. Set `gcc`, `objdump`, and `riscof` directory's path variables in file: `scripts/constants.py`
 
 2. Spike
    1. Install Latest [https://github.com/riscv-software-src/riscv-isa-sim](https://github.com/riscv-software-src/riscv-isa-sim).
@@ -51,13 +47,14 @@ The test content is the same in both of them.
 ### Generate One Instruction
 
 ```
-python run.py -i <instruction> -t <type> [--vlen VLEN] [--vsew VSEW]
+python run.py -i <instruction> -t <type> [--vlen VLEN] [--vsew VSEW] [--lmul LMUL]
 ```
 ****
-- The type shall be consistent with the instruction: i (integer), f (floating point), m (mask), p (permute), x (fix point), l (load store)
+- The type shall be consistent with the instruction: i (integer), f (floating point), m (mask), p (permute), x (fix point), l (load/store)
 - Supported instruction and type can be seen in `cgfs/<type>/<instruction>.yaml`
-- vlen VLEN       Vector Register Length: 32, 64, 128(default), 256, 512, 1024
-- vsew VSEW       Selected Element Width: 8, 16, 32(default), 64
+- vlen (vector register length): 32, 64, 128(default), 256, 512, 1024
+- vsew (selected element width): 8, 16, 32(default), 64
+- lmul (vector length multiplier): 1/8, 1/4, 1/2, 1(default), 2, 4, 8
 
 ### Generate All Tests
 
@@ -66,11 +63,11 @@ python generate_all.py
 ```
 
 - This will use default parameter configuration to generate all integer instructions tests.
-- **Modify `runcommand_<type>` function to run different parameter.**
-- **Modyfy `main` function to run different type of instructions.**
+- Modify `runcommand_<type>` function to run different parameter.
+- Modyfy `main` function to run different type of instructions.
 
-After genering, run `python move_generate_all_elf.py`, this will check if generated file is valid. If you see 
-   - `No first.S for vXX` is OK, ignore it
+After generating, run `python move_generate_all_elf.py` to check if the generated file is valid. If you see:
+   - `No first.S for vXX`, it's OK, ignore it.
    - `No RVMODEL_DATA_END for vXX` then it means vXX you should use generate one instruction method to regenerate it. Regenerate all of them and rerun `move_generate_all_elf.py` until no `No RVMODEL_DATA_END` appear.
    - All tests will in `generate_all` folder.
 
@@ -95,8 +92,6 @@ After genering, run `python move_generate_all_elf.py`, this will check if genera
 
 ## Known Bugs
 - Not support floating-point vsew=16
-- Lack of load store eew=64 tests
-- SEGMENT load and store signature problem: if eew > sew, only the first register will be signatured
 - mask instructions lack of test different registers tests
 
 ## Support Configuration
@@ -106,20 +101,24 @@ After genering, run `python move_generate_all_elf.py`, this will check if genera
 | FLEN      | FP16, BF16, 32, 64        | 32, 64          |                                |
 | vlen      | 128 ~ 2^16                | 128 ~ 1024      | Spike now support largest 4096 |
 | vsew      | 8, 16, 32, 64             | All             |                                |
-| lmul      | 1/8, 1/4, 1/2, 1, 2, 4, 8 | All             | lmul=8 except load/store， 1/8 except eew>=32 loadstore       |
+| lmul      | 1/8, 1/4, 1/2, 1, 2, 4, 8 | All             |                                |
 | vta       | 0, 1                      | 0               |                                |
 | vma       | 0, 1                      | 0               |                                |
 
 ### Notice of Failure Tests
 
-- **elen = 64 for default**
-  - vsew should <= elen * lmul
-  - So, when lmul = 0.125, load/store eew=32+ cannot test. 
+- **vsew <= elen * lmul** should be satisfied!
+  - By default, elen = 64.
 
-- If there are failure tests, most probably is because that configuration can not be tested on that instruction. For example test widen instruction when vsew=64, or test floating point when vsew=8/16, or the elen related restriction above.
+- If there are failure tests, it is most likely because the configuration cannot be tested on that instruction. For example, testing a widening instruction when vsew=64, or testing floating point when vsew=8/16, or violating the elen-related restriction mentioned above.
 
 ## Signature
 
 1. Save the results in Vd and CSRs, including xcsr(mstatus), fcsr and vcsr.
 
 2. Use x20 as basereg.
+
+3. The `arr` list in `rvmodel_data` represents the number of signatures.
+   - `arr[0]`: the memory size directly stored by the instruction `vse<eew>` or `vsseg<nf>e<eew>`
+   - `arr[1]`: the number of signatures stored using the macro `RVTEST_SIGUPD`
+   - `arr[2]`: the number of vector registers stored by the instruction `vs<nf>r.v`
