@@ -107,8 +107,8 @@ class spike(pluginTemplate):
           self.isa += 'd'
       if "C" in ispec["ISA"]:
           self.isa += 'c'
-      if "V" in ispec["ISA"]:
-          self.isa += 'v'
+      #if "V" in ispec["ISA"]:
+          #self.isa += 'v'
 
       #TODO: The following assumes you are using the riscv-gcc toolchain. If
       #      not please change appropriately
@@ -152,7 +152,7 @@ class spike(pluginTemplate):
           # for each test there are specific compile macros that need to be enabled. The macros in
           # the testList node only contain the macros/values. For the gcc toolchain we need to
           # prefix with "-D". The following does precisely that.
-          compile_macros= ' -D' + " -D".join(testentry['macros'])
+          compile_macros= ' -D' + " -D".join(testentry['macros']) + " -DVLEN=128"
 
           # substitute all variables in the compile command that we created in the initialize
           # function
@@ -163,7 +163,9 @@ class spike(pluginTemplate):
 	  # echo statement.
           if self.target_run:
             # set up the simulation command. Template is for spike. Please change.
-            simcmd = self.dut_exe + ' --isa={0} --varch=vlen:512,elen:64 -l --log-commits +signature={1} +signature-granularity=4 {2} > {3} 2>&1'.format(self.isa, sig_file, elf, log_file)
+            vstring = "_zvl128b_zve64d"
+            self.isa = self.isa + vstring
+            simcmd = self.dut_exe + ' --isa={0} -l --log-commits +signature={1} +signature-granularity=4 {2} > {3} 2>&1'.format(self.isa, sig_file, elf, log_file)
           else:
             simcmd = 'echo "NO RUN"'
 

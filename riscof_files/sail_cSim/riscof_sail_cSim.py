@@ -100,7 +100,7 @@ class sail_cSim(pluginTemplate):
             execute = "@cd "+testentry['work_dir']+";"
 
             cmd = self.compile_cmd.format("rv64gv", self.xlen) + ' ' + test + ' -o ' + elf
-            compile_cmd = cmd + ' -D' + " -D".join(testentry['macros'])
+            compile_cmd = cmd + ' -D' + " -D".join(testentry['macros']) + " -DVLEN=128"
             execute+=compile_cmd+";"
 
             execute += self.objdump_cmd.format(elf, self.xlen, 'ref.disass')

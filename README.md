@@ -84,7 +84,7 @@ After generating, run `python move_generate_all_elf.py` to check if the generate
 
 5. copy the `.S` test files to `test_suite`
 
-6. Modify VLEN and ELEN argument in `riscof_files/spike/riscof_spike.py` line 166: `-varch=vlen:512,elen:64`
+6. 6. Modify VLEN and ELEN argument in `riscof_files/spike/riscof_spike.py` line 166: `vstring = "_zvl512b_zve64d"`, also modify VLEN macro `-DVLEN=128` in `riscof_files/spike/riscof_spike.py` line 155 and `riscof_files/sail_cSim/riscof_sail_cSim.py` line 103
 
 7. run `riscof run --config=config.ini --suite=test_suite --env=env`
 
